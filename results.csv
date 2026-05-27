@@ -1,0 +1,11 @@
+timestamp,bot,seed,rounds_survived,hands_played,discards_used,final_ante,final_dollars,outcome
+2026-05-27 11:37:31,flush_bot,AAAA001,4,10,15,0,25,completed
+2026-05-27 11:42:25,flush_bot,AAAA002,3,11,168,0,12,completed
+2026-05-27 11:47:22,flush_bot,AAAA003,4,11,156,0,24,completed
+2026-05-27 11:50:28,flush_bot,AAAA004,5,12,90,0,35,completed
+2026-05-27 11:52:14,flush_bot,AAAA005,4,9,39,0,27,completed
+2026-05-27 11:56:48,flush_bot,AAAA006,5,16,160,0,29,completed
+2026-05-27 12:01:41,flush_bot,AAAA007,5,13,160,0,35,completed
+2026-05-27 12:02:45,flush_bot,AAAA008,3,7,9,0,16,completed
+2026-05-27 12:04:38,flush_bot,AAAA009,4,11,45,0,24,completed
+2026-05-27 12:06:49,flush_bot,AAAA010,5,14,51,0,32,completed
