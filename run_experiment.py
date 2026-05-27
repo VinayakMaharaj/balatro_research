@@ -7,9 +7,11 @@ from datetime import datetime
 sys.path.insert(0, r"C:\Users\vinay\AppData\Roaming\Balatro\Mods\balatrobot")
 
 from bot import Bot, Actions, State
-from gamestates import cache_state
 
-SEEDS = ["AAAA001", "AAAA002", "AAAA003"]
+SEEDS = [
+    "AAAA001", "AAAA002", "AAAA003", "AAAA004", "AAAA005",
+    "AAAA006", "AAAA007", "AAAA008", "AAAA009", "AAAA010"
+]
 LOG_FILE = r"C:\projects\balatro_research\results.csv"
 
 
@@ -27,12 +29,18 @@ class LoggedFlushBot(Bot):
         self.rounds_survived = 0
         self.hands_played = 0
         self.discards_used = 0
+        self.final_ante = 0
+        self.final_dollars = 0
 
     def skip_or_select_blind(self, bot, G):
         return [Actions.SELECT_BLIND]
 
     def select_cards_from_hand(self, bot, G):
-        self.hands_played += 1
+        # use game's own counter
+        self.hands_played = G.get("num_hands_played", self.hands_played)
+        self.rounds_survived = G.get("round", self.rounds_survived)
+        self.final_dollars = G.get("dollars", self.final_dollars)
+        self.final_ante = G.get("ante", {}).get("ante_number", self.final_ante)
 
         suit_count = {"Hearts": 0, "Diamonds": 0, "Clubs": 0, "Spades": 0}
         for card in G["hand"]:
@@ -83,23 +91,21 @@ class LoggedFlushBot(Bot):
         return [Actions.REARRANGE_HAND, []]
 
 
-def log_result(seed, rounds, hands, discards, outcome):
+def log_result(bot_name, seed, rounds, hands, discards, ante, dollars, outcome):
     file_exists = os.path.exists(LOG_FILE)
     with open(LOG_FILE, "a", newline="") as f:
         writer = csv.writer(f)
         if not file_exists:
-            writer.writerow(["timestamp", "bot", "seed", "rounds_survived",
-                             "hands_played", "discards_used", "outcome"])
+            writer.writerow([
+                "timestamp", "bot", "seed", "rounds_survived",
+                "hands_played", "discards_used", "final_ante",
+                "final_dollars", "outcome"
+            ])
         writer.writerow([
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "flush_bot",
-            seed,
-            rounds,
-            hands,
-            discards,
-            outcome
+            bot_name, seed, rounds, hands, discards, ante, dollars, outcome
         ])
-    print(f"Logged: seed={seed}, rounds={rounds}, hands={hands}, outcome={outcome}")
+    print(f"Logged: seed={seed}, rounds={rounds}, hands={hands}, ante={ante}, dollars={dollars}, outcome={outcome}")
 
 
 def run_single_game(seed):
@@ -108,10 +114,10 @@ def run_single_game(seed):
 
     try:
         bot.start_balatro_instance()
-        print("Balatro launching, waiting 20 seconds...")
+        print("Balatro launching, waiting 35 seconds...")
         time.sleep(35)
 
-        max_steps = 2000
+        max_steps = 5000
         steps = 0
 
         while steps < max_steps:
@@ -119,22 +125,25 @@ def run_single_game(seed):
             steps += 1
 
             if bot.G is not None:
-                if bot.G.get("state") == State.GAME_OVER.value:
-                    print(f"Game over after {bot.rounds_survived} rounds")
+                state_val = bot.G.get("state")
+                if state_val == State.GAME_OVER.value:
+                    print(f"Game over at round {bot.rounds_survived}")
                     break
-                if "round" in bot.G:
-                    bot.rounds_survived = bot.G.get("round", 0)
 
-            time.sleep(0.1)
+            time.sleep(0.05)
 
         outcome = "completed" if steps < max_steps else "timeout"
-        log_result(seed, bot.rounds_survived, bot.hands_played,
-                   bot.discards_used, outcome)
+        log_result(
+            "flush_bot", seed, bot.rounds_survived, bot.hands_played,
+            bot.discards_used, bot.final_ante, bot.final_dollars, outcome
+        )
 
     except Exception as e:
         print(f"Error during run: {e}")
-        log_result(seed, bot.rounds_survived, bot.hands_played,
-                   bot.discards_used, "error")
+        log_result(
+            "flush_bot", seed, bot.rounds_survived, bot.hands_played,
+            bot.discards_used, bot.final_ante, bot.final_dollars, "error"
+        )
     finally:
         bot.stop_balatro_instance()
         print("Balatro instance stopped")
