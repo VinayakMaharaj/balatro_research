@@ -32,15 +32,31 @@ class LoggedFlushBot(Bot):
         self.final_ante = 0
         self.final_dollars = 0
 
+    def get_ante_from_round(self, round_num):
+        if round_num <= 0:
+            return 0
+        return ((round_num - 1) // 3) + 1
+
     def skip_or_select_blind(self, bot, G):
+        round_num = G.get("round", 0)
+        if round_num < self.rounds_survived and self.rounds_survived > 0:
+            print(f"Run reset detected at blind select, stopping")
+            self.running = False
+            return [Actions.SELECT_BLIND]
         return [Actions.SELECT_BLIND]
 
     def select_cards_from_hand(self, bot, G):
-        # use game's own counter
+        round_num = G.get("round", 0)
+
+        if round_num < self.rounds_survived and self.rounds_survived > 0:
+            print(f"Run reset detected at round {round_num}, stopping")
+            self.running = False
+            return [Actions.PLAY_HAND, [1]]
+
+        self.rounds_survived = round_num
         self.hands_played = G.get("num_hands_played", self.hands_played)
-        self.rounds_survived = G.get("round", self.rounds_survived)
         self.final_dollars = G.get("dollars", self.final_dollars)
-        self.final_ante = G.get("ante", {}).get("ante_number", self.final_ante)
+        self.final_ante = self.get_ante_from_round(round_num)
 
         suit_count = {"Hearts": 0, "Diamonds": 0, "Clubs": 0, "Spades": 0}
         for card in G["hand"]:
@@ -125,9 +141,11 @@ def run_single_game(seed):
             steps += 1
 
             if bot.G is not None:
-                state_val = bot.G.get("state")
-                if state_val == State.GAME_OVER.value:
+                if bot.G.get("state") == State.GAME_OVER.value:
                     print(f"Game over at round {bot.rounds_survived}")
+                    break
+                if not bot.running:
+                    print(f"Bot stopped at round {bot.rounds_survived}")
                     break
 
             time.sleep(0.05)
