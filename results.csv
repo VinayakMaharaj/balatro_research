@@ -9,3 +9,13 @@ timestamp,bot,seed,rounds_survived,hands_played,discards_used,final_ante,final_d
 2026-05-27 12:24:22,flush_bot,AAAA008,3,7,9,1,16,completed
 2026-05-27 12:25:32,flush_bot,AAAA009,4,11,15,2,24,completed
 2026-05-27 12:26:48,flush_bot,AAAA010,5,14,17,2,32,completed
+2026-05-27 12:37:33,meta_bot,AAAA001,1,1,2,1,4,0,0,error
+2026-05-27 12:38:26,meta_bot,AAAA002,1,0,3,1,4,0,0,error
+2026-05-27 12:39:20,meta_bot,AAAA003,1,2,1,1,4,0,0,error
+2026-05-27 12:40:14,meta_bot,AAAA004,1,1,4,1,4,0,0,error
+2026-05-27 12:41:07,meta_bot,AAAA005,1,0,1,1,4,0,0,error
+2026-05-27 12:42:00,meta_bot,AAAA006,1,0,4,1,4,0,0,error
+2026-05-27 12:42:55,meta_bot,AAAA007,1,1,4,1,4,0,0,error
+2026-05-27 12:43:49,meta_bot,AAAA008,1,0,4,1,4,0,0,error
+2026-05-27 12:44:41,meta_bot,AAAA009,1,0,2,1,4,0,0,error
+2026-05-27 12:45:33,meta_bot,AAAA010,1,0,1,1,4,0,0,error

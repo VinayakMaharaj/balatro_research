@@ -79,7 +79,6 @@ class MetaBot(Bot):
             self.running = False
             return [Actions.SELECT_BLIND]
 
-        # skip small blind on ante 2+ to farm tag rewards
         blind_on_deck = G.get("ante", {}).get("blinds", {}).get("ondeck", "")
         ante = self.get_ante_from_round(round_num)
         if blind_on_deck == "Small" and ante >= 2:
@@ -188,7 +187,6 @@ class MetaBot(Bot):
         hand = G["hand"]
         hand_type, best_cards = self.get_best_hand(hand)
 
-        # play immediately if strong hand
         if hand_type in ["Flush", "Straight", "Four of a Kind", "Full House"]:
             print(f"Playing strong hand: {hand_type}")
             return [
@@ -196,7 +194,6 @@ class MetaBot(Bot):
                 [hand.index(c) + 1 for c in best_cards]
             ]
 
-        # discard if we can improve
         if G["current_round"]["discards_left"] > 0:
             discard_cards = [c for c in hand if c not in best_cards][:5]
             if discard_cards:
@@ -214,37 +211,40 @@ class MetaBot(Bot):
         ]
 
     def select_shop_action(self, bot, G):
+        shop = G.get("shop", {})
         dollars = G.get("dollars", 0)
-        shop = G.get("shop", [])
-        current_jokers = G.get("jokers", [])
-        max_jokers = G.get("max_jokers", 5)
 
-        if not shop:
+        if not shop or isinstance(shop, str):
             return [Actions.END_SHOP]
 
-        # find best affordable joker in shop by tier
-        best_item = None
+        # dont attempt purchase if we have less than $6
+        if dollars < 6:
+            return [Actions.END_SHOP]
+
+        cards = shop.get("cards", [])
+
         best_priority = 99
         best_index = -1
 
-        for i, item in enumerate(shop):
-            item_name = item.get("name", "")
-            item_cost = item.get("cost", 999)
-            item_type = item.get("type", "")
+        for i, item in enumerate(cards):
+            if isinstance(item, str):
+                item_name = item.lower()
+            else:
+                item_name = item.get("label", "").lower()
 
-            if item_type == "Joker" and item_cost <= dollars:
-                if len(current_jokers) < max_jokers:
-                    priority = get_joker_priority(item_name)
-                    if priority < best_priority:
-                        best_priority = priority
-                        best_item = item
-                        best_index = i
+            priority = get_joker_priority(item_name)
+            if priority < best_priority:
+                best_priority = priority
+                best_index = i
 
-        # buy S+, S, or A tier jokers
-        if best_item is not None and best_priority <= 2:
-            print(f"Buying {best_item.get('name')} "
-                  f"(tier priority {best_priority}) "
-                  f"for ${best_item.get('cost')}")
+        if best_index >= 0 and best_priority <= 2:
+            item_name = (
+                cards[best_index].get("label", "")
+                if isinstance(cards[best_index], dict)
+                else cards[best_index]
+            )
+            print(f"Attempting to buy {item_name} "
+                  f"(priority {best_priority}), dollars={dollars}")
             self.jokers_bought += 1
             return [Actions.BUY_CARD, [best_index + 1]]
 
