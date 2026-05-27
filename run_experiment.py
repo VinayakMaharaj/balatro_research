@@ -109,7 +109,7 @@ def run_single_game(seed):
     try:
         bot.start_balatro_instance()
         print("Balatro launching, waiting 20 seconds...")
-        time.sleep(20)
+        time.sleep(35)
 
         max_steps = 2000
         steps = 0
@@ -138,7 +138,7 @@ def run_single_game(seed):
     finally:
         bot.stop_balatro_instance()
         print("Balatro instance stopped")
-        time.sleep(5)
+        time.sleep(15)
 
 
 if __name__ == "__main__":
