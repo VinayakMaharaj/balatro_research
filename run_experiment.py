@@ -25,14 +25,13 @@ class LoggedFlushBot(Bot):
         )
         self.seed = seed
         self.rounds_survived = 0
-        self.final_score = 0
         self.hands_played = 0
         self.discards_used = 0
 
-    def skip_or_select_blind(self, G):
+    def skip_or_select_blind(self, bot, G):
         return [Actions.SELECT_BLIND]
 
-    def select_cards_from_hand(self, G):
+    def select_cards_from_hand(self, bot, G):
         self.hands_played += 1
 
         suit_count = {"Hearts": 0, "Diamonds": 0, "Clubs": 0, "Spades": 0}
@@ -62,25 +61,25 @@ class LoggedFlushBot(Bot):
 
         return [Actions.PLAY_HAND, [1]]
 
-    def select_shop_action(self, G):
+    def select_shop_action(self, bot, G):
         return [Actions.END_SHOP]
 
-    def select_booster_action(self, G):
+    def select_booster_action(self, bot, G):
         return [Actions.SKIP_BOOSTER_PACK]
 
-    def sell_jokers(self, G):
+    def sell_jokers(self, bot, G):
         return [Actions.SELL_JOKER, []]
 
-    def rearrange_jokers(self, G):
+    def rearrange_jokers(self, bot, G):
         return [Actions.REARRANGE_JOKERS, []]
 
-    def use_or_sell_consumables(self, G):
+    def use_or_sell_consumables(self, bot, G):
         return [Actions.USE_CONSUMABLE, []]
 
-    def rearrange_consumables(self, G):
+    def rearrange_consumables(self, bot, G):
         return [Actions.REARRANGE_CONSUMABLES, []]
 
-    def rearrange_hand(self, G):
+    def rearrange_hand(self, bot, G):
         return [Actions.REARRANGE_HAND, []]
 
 
@@ -89,7 +88,8 @@ def log_result(seed, rounds, hands, discards, outcome):
     with open(LOG_FILE, "a", newline="") as f:
         writer = csv.writer(f)
         if not file_exists:
-            writer.writerow(["timestamp", "bot", "seed", "rounds_survived", "hands_played", "discards_used", "outcome"])
+            writer.writerow(["timestamp", "bot", "seed", "rounds_survived",
+                             "hands_played", "discards_used", "outcome"])
         writer.writerow([
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "flush_bot",
@@ -122,18 +122,19 @@ def run_single_game(seed):
                 if bot.G.get("state") == State.GAME_OVER.value:
                     print(f"Game over after {bot.rounds_survived} rounds")
                     break
-
-                if "current_round" in bot.G:
+                if "round" in bot.G:
                     bot.rounds_survived = bot.G.get("round", 0)
 
             time.sleep(0.1)
 
         outcome = "completed" if steps < max_steps else "timeout"
-        log_result(seed, bot.rounds_survived, bot.hands_played, bot.discards_used, outcome)
+        log_result(seed, bot.rounds_survived, bot.hands_played,
+                   bot.discards_used, outcome)
 
     except Exception as e:
         print(f"Error during run: {e}")
-        log_result(seed, bot.rounds_survived, bot.hands_played, bot.discards_used, "error")
+        log_result(seed, bot.rounds_survived, bot.hands_played,
+                   bot.discards_used, "error")
     finally:
         bot.stop_balatro_instance()
         print("Balatro instance stopped")
