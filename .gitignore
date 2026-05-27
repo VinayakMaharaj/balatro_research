@@ -1,6 +1,6 @@
 @"
 gamestate_cache/
-results.csv
+
 __pycache__/
 *.pyc
 .env

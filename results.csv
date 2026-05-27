@@ -1,0 +1,4 @@
+timestamp,bot,seed,rounds_survived,hands_played,discards_used,outcome
+2026-05-27 11:20:04,flush_bot,AAAA001,4,79,45,completed
+2026-05-27 11:22:55,flush_bot,AAAA002,3,121,60,completed
+2026-05-27 11:27:24,flush_bot,AAAA003,3,208,104,timeout
