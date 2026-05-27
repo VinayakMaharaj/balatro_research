@@ -1,0 +1,8 @@
+@"
+gamestate_cache/
+results.csv
+__pycache__/
+*.pyc
+.env
+api_keys.txt
+"@ | Out-File -FilePath .gitignore -Encoding utf8
