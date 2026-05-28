@@ -1,24 +1,12 @@
-timestamp,bot,seed,rounds_survived,hands_played,discards_used,final_ante,final_dollars,outcome
-2026-05-27 12:16:03,flush_bot,AAAA001,4,10,15,2,25,completed
-2026-05-27 12:17:11,flush_bot,AAAA002,3,11,12,1,12,completed
-2026-05-27 12:18:21,flush_bot,AAAA003,4,11,12,2,24,completed
-2026-05-27 12:19:33,flush_bot,AAAA004,5,12,15,2,35,completed
-2026-05-27 12:20:44,flush_bot,AAAA005,4,9,13,2,27,completed
-2026-05-27 12:22:03,flush_bot,AAAA006,5,16,20,2,29,completed
-2026-05-27 12:23:18,flush_bot,AAAA007,5,13,16,2,35,completed
-2026-05-27 12:24:22,flush_bot,AAAA008,3,7,9,1,16,completed
-2026-05-27 12:25:32,flush_bot,AAAA009,4,11,15,2,24,completed
-2026-05-27 12:26:48,flush_bot,AAAA010,5,14,17,2,32,completed
-2026-05-27 12:37:33,meta_bot,AAAA001,1,1,2,1,4,0,0,error
-2026-05-27 12:38:26,meta_bot,AAAA002,1,0,3,1,4,0,0,error
-2026-05-27 12:39:20,meta_bot,AAAA003,1,2,1,1,4,0,0,error
-2026-05-27 12:40:14,meta_bot,AAAA004,1,1,4,1,4,0,0,error
-2026-05-27 12:41:07,meta_bot,AAAA005,1,0,1,1,4,0,0,error
-2026-05-27 12:42:00,meta_bot,AAAA006,1,0,4,1,4,0,0,error
-2026-05-27 12:42:55,meta_bot,AAAA007,1,1,4,1,4,0,0,error
-2026-05-27 12:43:49,meta_bot,AAAA008,1,0,4,1,4,0,0,error
-2026-05-27 12:44:41,meta_bot,AAAA009,1,0,2,1,4,0,0,error
-2026-05-27 12:45:33,meta_bot,AAAA010,1,0,1,1,4,0,0,error
-2026-05-27 13:01:57,meta_bot,AAAA001,5,12,14,2,40,2,0,completed
-2026-05-27 13:03:03,meta_bot,AAAA002,3,8,11,1,16,0,0,completed
-2026-05-27 13:04:18,meta_bot,AAAA003,5,15,11,2,31,0,0,completed
+timestamp,bot_type,seed,deck,stake,final_ante,final_round,hands_played,discards_used,final_dollars,jokers_bought,blinds_skipped,outcome,duration_seconds,notes
+2026-05-27 23:17:00,flush_bot,AAAAAAA,RED,WHITE,1,2,5,0,10,0,0,lost,30.5,
+2026-05-27 23:18:14,flush_bot,AAAAAAA,RED,WHITE,1,2,5,0,10,0,0,lost,30.5,
+2026-05-27 23:18:47,flush_bot,BBBBBBB,RED,WHITE,1,1,4,0,4,0,0,lost,21.5,
+2026-05-27 23:19:10,flush_bot,CCCCCCC,RED,WHITE,1,2,8,0,7,0,0,lost,42.8,
+2026-05-27 23:19:55,flush_bot,DDDDDDD,RED,WHITE,1,2,6,0,9,0,0,lost,35.2,
+2026-05-27 23:20:32,flush_bot,EEEEEEE,RED,WHITE,1,1,4,0,4,0,0,lost,23.7,
+2026-05-27 23:22:38,meta_bot,AAAAAAA,RED,WHITE,1,2,5,0,10,0,0,lost,31.0,
+2026-05-27 23:23:11,meta_bot,BBBBBBB,RED,WHITE,1,1,4,0,4,0,0,lost,21.5,
+2026-05-27 23:23:34,meta_bot,CCCCCCC,RED,WHITE,1,2,8,0,7,0,0,lost,42.7,
+2026-05-27 23:24:19,meta_bot,DDDDDDD,RED,WHITE,1,2,6,0,5,1,0,lost,37.0,
+2026-05-27 23:24:58,meta_bot,EEEEEEE,RED,WHITE,1,1,4,0,4,0,0,lost,23.0,
