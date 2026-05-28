@@ -19,3 +19,6 @@ timestamp,bot,seed,rounds_survived,hands_played,discards_used,final_ante,final_d
 2026-05-27 12:43:49,meta_bot,AAAA008,1,0,4,1,4,0,0,error
 2026-05-27 12:44:41,meta_bot,AAAA009,1,0,2,1,4,0,0,error
 2026-05-27 12:45:33,meta_bot,AAAA010,1,0,1,1,4,0,0,error
+2026-05-27 13:01:57,meta_bot,AAAA001,5,12,14,2,40,2,0,completed
+2026-05-27 13:03:03,meta_bot,AAAA002,3,8,11,1,16,0,0,completed
+2026-05-27 13:04:18,meta_bot,AAAA003,5,15,11,2,31,0,0,completed
