@@ -436,9 +436,84 @@ class BaseBot:
                 writer.writeheader()
 
     def _write_row(self, metrics: dict) -> None:
-        """Append one row to the results CSV."""
+        """Append one row to the results CSV and log to W&B if enabled."""
+        # CSV logging
         with self.results_path.open("a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
-            # Fill any missing fields with empty string
             row = {k: metrics.get(k, "") for k in FIELDNAMES}
             writer.writerow(row)
+
+        # W&B logging
+        try:
+            import wandb
+            if wandb.run is not None:
+                wandb.log({
+                    "final_ante":       metrics.get("final_ante", 0),
+                    "final_round":      metrics.get("final_round", 0),
+                    "hands_played":     metrics.get("hands_played", 0),
+                    "discards_used":    metrics.get("discards_used", 0),
+                    "final_dollars":    metrics.get("final_dollars", 0),
+                    "jokers_bought":    metrics.get("jokers_bought", 0),
+                    "blinds_skipped":   metrics.get("blinds_skipped", 0),
+                    "duration_seconds": metrics.get("duration_seconds", 0),
+                    "outcome":          1 if metrics.get("outcome") == "won" else 0,
+                    "seed":             metrics.get("seed", ""),
+                    "bot_type":         metrics.get("bot_type", ""),
+                })
+        except ImportError:
+            pass  # wandb not installed, skip silently
+
+    def run_experiment(self, seeds: list[str], runs_per_seed: int = 1) -> list[dict]:
+        """
+        Run the full experiment across all seeds.
+        Initializes a W&B run for the entire experiment if wandb is installed.
+        """
+        all_results = []
+        total = len(seeds) * runs_per_seed
+
+        # Initialize W&B run
+        try:
+            import wandb
+            wandb.init(
+                project="balatro-research",
+                name=f"{self.BOT_TYPE}_{len(seeds)}seeds_x{runs_per_seed}",
+                config={
+                    "bot_type":      self.BOT_TYPE,
+                    "seeds":         seeds,
+                    "runs_per_seed": runs_per_seed,
+                    "total_games":   total,
+                    "deck":          self.deck,
+                    "stake":         self.stake,
+                },
+                tags=[self.BOT_TYPE, "heuristic"],
+            )
+            logger.info("W&B run initialized")
+        except ImportError:
+            logger.info("wandb not installed, skipping W&B logging")
+
+        for run_idx in range(runs_per_seed):
+            for seed in seeds:
+                game_num = run_idx * len(seeds) + seeds.index(seed) + 1
+                logger.info(f"[{game_num}/{total}] Running seed={seed} run={run_idx + 1}/{runs_per_seed}")
+
+                result = self.run_game(seed)
+                all_results.append(result)
+
+                time.sleep(2.0)
+
+        # Log summary stats to W&B
+        try:
+            import wandb
+            if wandb.run is not None:
+                completed = [r for r in all_results if r["outcome"] in ("won", "lost")]
+                if completed:
+                    wandb.summary["avg_final_round"] = sum(r["final_round"] for r in completed) / len(completed)
+                    wandb.summary["avg_final_ante"]  = sum(r["final_ante"] for r in completed) / len(completed)
+                    wandb.summary["avg_jokers_bought"] = sum(r["jokers_bought"] for r in completed) / len(completed)
+                    wandb.summary["win_rate"]        = sum(1 for r in completed if r["outcome"] == "won") / len(completed)
+                    wandb.summary["games_completed"] = len(completed)
+                wandb.finish()
+        except ImportError:
+            pass
+
+        return all_results
