@@ -268,20 +268,66 @@ def scrape_wiki_page(url: str, category: str) -> list[dict]:
     return chunks
 
 
+def load_json_data(filepath: str, category: str) -> list[dict]:
+    """Load card data from a local JSON file."""
+    chunks = []
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        # Handle both list and dict formats
+        items = data if isinstance(data, list) else data.get(category, data.get('items', []))
+        
+        for item in items:
+            name = item.get('name', item.get('Name', ''))
+            desc = item.get('description', item.get('Description', item.get('effect', '')))
+            
+            if len(name) > 2 and len(desc) > 20:
+                chunk_id = f"{category}_{name.lower().replace(' ', '_')[:30]}"
+                chunks.append({
+                    "id": chunk_id,
+                    "category": category,
+                    "title": name,
+                    "text": f"{name}: {desc}",
+                })
+        
+        logger.info(f"Loaded {len(chunks)} chunks from {filepath}")
+    except FileNotFoundError:
+        logger.warning(f"JSON file not found: {filepath}")
+    except Exception as e:
+        logger.warning(f"Failed to load {filepath}: {e}")
+    
+    return chunks
+
+
 def build_corpus() -> list[dict]:
     """
-    Build the full rules corpus by scraping the wiki.
-    Falls back to hardcoded rules if scraping fails.
+    Build the full rules corpus from local JSON files.
+    Falls back to hardcoded rules if files are missing.
     """
     all_chunks = []
 
-    for category, url in WIKI_PAGES:
-        logger.info(f"Scraping {category} from {url}")
-        chunks = scrape_wiki_page(url, category)
-        all_chunks.extend(chunks)
-        time.sleep(0.5)  # be polite to the wiki
+    # Map category names to local JSON files
+    JSON_FILES = {
+        "jokers":       "data/jokers.json",
+        "tarots":       "data/tarots.json",
+        "planets":      "data/planets.json",
+        "spectrals":    "data/spectrals.json",
+        "poker_hands":  "data/poker_hands.json",
+        "blinds":       "data/blinds.json",
+        "vouchers":     "data/vouchers.json",
+        "decks":        "data/decks.json",
+        "enhancements": "data/enhancements.json",
+        "editions":     "data/editions.json",
+        "seals":        "data/seals.json",
+        "tags":         "data/tags.json",
+    }
 
-    # Always include fallback rules to ensure key mechanics are covered
+    for category, filepath in JSON_FILES.items():
+        chunks = load_json_data(filepath, category)
+        all_chunks.extend(chunks)
+
+    # Always include fallback rules
     existing_ids = {c["id"] for c in all_chunks}
     for rule in FALLBACK_RULES:
         if rule["id"] not in existing_ids:
@@ -289,7 +335,6 @@ def build_corpus() -> list[dict]:
 
     logger.info(f"Total corpus size: {len(all_chunks)} chunks")
     return all_chunks
-
 
 # ---------------------------------------------------------------------------
 # Index builder
