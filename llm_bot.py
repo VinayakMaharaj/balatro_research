@@ -85,7 +85,7 @@ def format_jokers(jokers_area: dict) -> str:
         label = card.get("label", "Unknown")
         v = card.get("value", {})
         effect = v.get("effect", "")
-        lines.append(f"  {i}: {label} - {effect}")
+        lines.append(f"  {i}: {label}")
     return "\n".join(lines)
  
  
@@ -172,10 +172,11 @@ JOKERS:
 {format_jokers(jokers)}
  
 Respond ONLY in this JSON format:
-{{"action": "play" or "discard", "cards": [indices], "reasoning": "brief"}}
+{{"action": "play" or "discard", "cards": [indices], "reasoning": "1 sentence max"}}
  
 Rules: play 1-5 cards to score, discard 1-5 to draw new. Beat {chips_needed} total chips.
-Best hands: Flush > Straight > Four of a Kind > Full House > Three of a Kind > Two Pair > Pair"""
+Best hands: Flush > Straight > Four of a Kind > Full House > Three of a Kind > Two Pair > Pair
+Discard strategy: if you have no pair or better, discard your 3 weakest cards to fish for a stronger hand. Use discards aggressively early — wasted discards are wasted value."""
  
     elif state_name == "SHOP":
         reroll_cost = round_info.get("reroll_cost", 5)
@@ -189,7 +190,12 @@ JOKERS: {get_joker_count(state)}/{get_joker_limit(state)} slots
 Respond ONLY in this JSON format:
 {{"actions": [{{"action": "buy_card", "index": 0}}, {{"action": "end_shop"}}]}}
  
-Valid actions: buy_card, buy_pack, reroll, end_shop. Always end with end_shop."""
+Valid actions: buy_card, buy_pack, reroll, end_shop. Always end with end_shop.
+Economy rules:
+- INTEREST: you earn $1 per $5 held at end of shop (max $5 bonus). Holding $20+ is worth $4/round.
+- SPEND FLOOR: only buy if your money after purchase stays >= $6. Never spend down to $0-$5.
+- SKIP REWARD: skipping small or big blind gives a tag (free card/joker). Skip if your hand is strong enough to beat the blind easily.
+- PRIORITY: Jokers > consumables > packs. Only reroll if you have $10+ after reroll cost."""
  
     elif state_name == "BLIND_SELECT":
         prompt += f"""BLIND SELECTION:
@@ -201,7 +207,7 @@ JOKERS:
 Respond ONLY in this JSON format:
 {{"action": "select" or "skip", "reasoning": "brief"}}
  
-Rules: skipping small/big gives tag reward. Boss CANNOT be skipped."""
+Rules: skipping small/big gives a tag (free joker, free card, or other bonus) — skip if you have a strong joker setup or a comfortable chip lead. Boss CANNOT be skipped. When in doubt on small blind, skip it."""
  
     return prompt
  

@@ -34,3 +34,13 @@ timestamp,bot_type,seed,deck,stake,final_ante,final_round,hands_played,discards_
 2026-06-01 12:39:46,llm_bot,CCCCCCC,RED,WHITE,1,1,4,0,4,0,0,lost,26.5,
 2026-06-01 12:40:15,llm_bot,DDDDDDD,RED,WHITE,2,4,12,0,5,3,0,lost,103.4,
 2026-06-01 12:42:00,llm_bot,EEEEEEE,RED,WHITE,1,1,4,1,4,0,0,lost,28.8,
+2026-06-01 13:27:40,rag_llm_bot,AAAAAAA,RED,WHITE,1,2,5,1,6,1,0,lost,50.1,
+2026-06-01 13:28:33,rag_llm_bot,BBBBBBB,RED,WHITE,1,1,4,0,4,0,0,lost,37.3,
+2026-06-01 13:29:12,rag_llm_bot,CCCCCCC,RED,WHITE,1,2,6,0,3,1,1,lost,57.5,
+2026-06-01 13:30:11,rag_llm_bot,DDDDDDD,RED,WHITE,1,1,4,0,4,0,0,lost,32.3,
+2026-06-01 13:30:46,rag_llm_bot,EEEEEEE,RED,WHITE,1,2,8,0,3,1,1,lost,66.8,
+2026-06-01 13:45:26,rag_llm_bot,AAAAAAA,RED,WHITE,1,1,4,4,4,0,2,lost,46.1,
+2026-06-01 13:46:14,rag_llm_bot,BBBBBBB,RED,WHITE,1,1,4,4,4,0,2,lost,50.1,
+2026-06-01 13:47:06,rag_llm_bot,CCCCCCC,RED,WHITE,1,1,4,4,4,0,2,lost,43.3,
+2026-06-01 13:47:51,rag_llm_bot,DDDDDDD,RED,WHITE,1,1,4,4,4,0,2,lost,39.5,
+2026-06-01 13:48:33,rag_llm_bot,EEEEEEE,RED,WHITE,1,0,0,0,4,0,2,error,10.7,BalatroError: INVALID_STATE - Method 'skip' requires one of these states: BLIND_SELECT
