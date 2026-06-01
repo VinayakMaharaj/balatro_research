@@ -26,3 +26,11 @@ timestamp,bot_type,seed,deck,stake,final_ante,final_round,hands_played,discards_
 2026-05-28 22:06:08,meta_bot,DDDDDDD,RED,WHITE,2,4,8,3,8,3,2,lost,64.1,
 2026-05-28 22:07:14,meta_bot,EEEEEEE,RED,WHITE,3,5,10,14,35,1,4,lost,89.4,
 2026-06-01 12:13:40,llm_bot,AAAAAAA,RED,WHITE,3,3,6,6,7,2,6,incomplete,346.2,
+2026-06-01 12:22:02,llm_bot,AAAAAAA,RED,WHITE,0,0,0,0,0,0,0,error,8.0,Error: [WinError 10061] No connection could be made because the target machine actively refused it
+2026-06-01 12:28:57,llm_bot,AAAAAAA,RED,WHITE,1,0,0,0,4,0,0,error,3.7,"Error: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CbcrcbopKur9gqv3XXcAZ'}"
+2026-06-01 12:33:14,llm_bot,AAAAAAA,RED,WHITE,1,3,8,3,8,2,0,lost,86.3,
+2026-06-01 12:37:28,llm_bot,AAAAAAA,RED,WHITE,1,3,8,2,8,2,0,lost,76.9,
+2026-06-01 12:38:47,llm_bot,BBBBBBB,RED,WHITE,1,2,8,0,19,1,0,lost,57.4,
+2026-06-01 12:39:46,llm_bot,CCCCCCC,RED,WHITE,1,1,4,0,4,0,0,lost,26.5,
+2026-06-01 12:40:15,llm_bot,DDDDDDD,RED,WHITE,2,4,12,0,5,3,0,lost,103.4,
+2026-06-01 12:42:00,llm_bot,EEEEEEE,RED,WHITE,1,1,4,1,4,0,0,lost,28.8,
