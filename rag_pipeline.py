@@ -20,6 +20,7 @@ import time
 import logging
 import argparse
 import requests
+import unicodedata
 
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
@@ -253,6 +254,8 @@ def scrape_wiki_page(url: str, category: str) -> list[dict]:
 
             if len(name) > 2 and len(desc) > 20:
                 chunk_id = f"{category}_{name.lower().replace(' ', '_')[:30]}"
+                # Normalize to ASCII
+                chunk_id = unicodedata.normalize('NFKD', chunk_id).encode('ascii', 'ignore').decode('ascii')
                 chunks.append({
                     "id": chunk_id,
                     "category": category,

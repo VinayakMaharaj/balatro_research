@@ -63,7 +63,7 @@
   {"name": "Red Card", "description": "Gains +3 Mult when any Booster Pack is skipped."},
   {"name": "Madness", "description": "When Small or Big Blind is selected, gains X0.5 Mult and destroys a random Joker."},
   {"name": "Square Joker", "description": "Gains +4 Chips if played hand has exactly 4 cards."},
-  {"name": "Séance", "description": "If poker hand is a Straight Flush, create a random Spectral card."},
+  {"name": "Seance", "description": "If poker hand is a Straight Flush, create a random Spectral card."},
   {"name": "Riff-Raff", "description": "When Blind is selected, create 2 random Common Jokers."},
   {"name": "Vampire", "description": "Gains X0.1 Mult per scoring Enhanced card played. Removes card enhancements after scoring."},
   {"name": "Shortcut", "description": "Allows Straights to be made with gaps of 1 rank (e.g., 2-4-5-6-7)."},
