@@ -34,7 +34,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-SEEDS = ["AAAAAAA", "BBBBBBB", "CCCCCCC", "DDDDDDD", "EEEEEEE"]
+SEEDS = [f"SEED{str(i).zfill(3)}" for i in range(1, 101)]
 RESULTS_FILE = "results.csv"
 PYTHON = sys.executable
 

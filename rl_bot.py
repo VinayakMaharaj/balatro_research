@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 MODEL_DIR = Path("rl_model")
 MODEL_PATH = MODEL_DIR / "ppo_balatro"
 
-BENCHMARK_SEEDS = ["AAAAAAA", "BBBBBBB", "CCCCCCC", "DDDDDDD", "EEEEEEE"]
+BENCHMARK_SEEDS = [f"SEED{str(i).zfill(3)}" for i in range(1, 101)]
 RUNS_PER_SEED = 1
 
 
