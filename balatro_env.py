@@ -348,7 +348,7 @@ class BalatroEnv(gym.Env):
             idxs = _best_pair_hand(cards)
         elif action == 1:  # discard_worst
             if discards_left > 0:
-                return self.client.discard(_worst_cards(cards, 3))
+                return self.client.discard([int(i) for i in _worst_cards(cards, 3)])
             idxs = _best_pair_hand(cards)
         elif action == 2:  # play_flush
             idxs = _find_flush(cards) or _best_pair_hand(cards)
@@ -360,7 +360,7 @@ class BalatroEnv(gym.Env):
         idxs = [i for i in idxs if 0 <= i < len(cards)]
         if not idxs:
             idxs = list(range(min(5, len(cards))))
-        return self.client.play(idxs)
+        return self.client.play([int(i) for i in idxs])
 
     def _do_shop_action(self, action: int) -> dict:
         shop_cards = self._state.get("shop", {}).get("cards", [])
@@ -380,7 +380,7 @@ class BalatroEnv(gym.Env):
             cost = shop_cards[buy_idx].get("cost", {}).get("buy", 999)
             if cost <= money:
                 try:
-                    return self.client.buy(card=buy_idx)
+                    return self.client.buy(card=int(buy_idx))
                 except BalatroError:
                     pass
 
