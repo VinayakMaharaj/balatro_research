@@ -2,23 +2,21 @@
 rl_bot.py
 PPO-based RL agent for Balatro using Stable-Baselines3 + Gymnasium.
 
-Architecture:
-    BalatroEnv (Gymnasium) -> PPO (SB3) -> BaseBot logging
-
 Two modes:
-    --train   : train the PPO agent, save model to rl_model/
-    --run     : load trained model and run experiment (logged to results.csv + W&B)
+    --train        : train on real env (slow, ~1 it/s)
+    --train --mock : train on mock env (fast, ~1000 it/s) — recommended
+    --run          : evaluate trained model on real env
 
 Install deps:
     pip install gymnasium stable-baselines3 --break-system-packages
 
-Run training (short test):
-    python rl_bot.py --train --timesteps 10000
+Fast training (recommended):
+    python rl_bot.py --train --mock --timesteps 500000
 
-Run full training:
-    python rl_bot.py --train --timesteps 500000
+Real env training (slow):
+    python rl_bot.py --train --timesteps 1000
 
-Run evaluation (uses trained model):
+Evaluation:
     python rl_bot.py --run --runs-per-seed 1
 """
 
@@ -32,11 +30,12 @@ from pathlib import Path
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.callbacks import BaseCallback
-import wandb
-from wandb.integration.sb3 import WandbCallback
 
 from balatro_env import BalatroEnv
-from base_bot import BaseBot, get_hand_cards, get_discards_left, get_money, get_shop_cards, get_shop_packs, get_blind_type
+from base_bot import (
+    BaseBot, get_hand_cards, get_discards_left, get_money,
+    get_shop_cards, get_shop_packs, get_blind_type, get_ante
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -52,32 +51,31 @@ RUNS_PER_SEED = 1
 
 
 # ---------------------------------------------------------------------------
-# W&B callback for SB3 training
+# W&B callback
 # ---------------------------------------------------------------------------
 
 class BalatroTrainingCallback(BaseCallback):
-    """Logs episode stats to W&B during PPO training."""
-
     def __init__(self, verbose=0):
         super().__init__(verbose)
-        self._episode_rewards = []
-        self._episode_lengths = []
 
     def _on_step(self) -> bool:
-        infos = self.locals.get("infos", [])
-        for info in infos:
-            if "episode" in info:
-                ep = info["episode"]
-                self._episode_rewards.append(ep["r"])
-                self._episode_lengths.append(ep["l"])
-                if wandb.run is not None:
+        try:
+            import wandb
+            if wandb.run is None:
+                return True
+            infos = self.locals.get("infos", [])
+            for info in infos:
+                if "episode" in info:
+                    ep = info["episode"]
                     wandb.log({
                         "train/episode_reward": ep["r"],
                         "train/episode_length": ep["l"],
-                        "train/ante": info.get("ante", 0),
-                        "train/round": info.get("round", 0),
-                        "train/won": int(info.get("won", False)),
+                        "train/ante":           info.get("ante", 0),
+                        "train/round":          info.get("round", 0),
+                        "train/won":            int(info.get("won", False)),
                     })
+        except ImportError:
+            pass
         return True
 
 
@@ -89,37 +87,40 @@ def train(
     timesteps: int = 500_000,
     seed: str = "AAAAAAA",
     port: int = 12346,
+    use_mock: bool = True,
 ):
-    logger.info(f"Training PPO for {timesteps} timesteps on seed={seed}")
+    if use_mock:
+        from balatro_mock_env import BalatroMockEnv
+        env = BalatroMockEnv()
+        env_name = "mock"
+        logger.info(f"Training PPO on MOCK env for {timesteps} timesteps")
+    else:
+        env = BalatroEnv(port=port, seed=seed)
+        env_name = "real"
+        logger.info(f"Training PPO on REAL env for {timesteps} timesteps (slow)")
 
-    env = BalatroEnv(port=port, seed=seed)
-
-    # Validate env conforms to Gymnasium API
     logger.info("Checking env...")
     check_env(env, warn=True)
     logger.info("Env check passed")
 
-    run = None
     try:
-        run = wandb.init(
+        import wandb
+        wandb.init(
             project="balatro-research",
-            name=f"rl_bot_ppo_train_{timesteps}steps",
+            name=f"rl_bot_ppo_{env_name}_{timesteps}steps",
             config={
-                "bot_type": "rl_bot",
-                "algorithm": "PPO",
-                "timesteps": timesteps,
-                "seed": seed,
-                "policy": "MlpPolicy",
+                "bot_type":   "rl_bot",
+                "algorithm":  "PPO",
+                "timesteps":  timesteps,
+                "env":        env_name,
+                "seed":       seed,
+                "policy":     "MlpPolicy",
             },
-            tags=["rl_bot", "ppo", "training"],
-            sync_tensorboard=False,
+            tags=["rl_bot", "ppo", "training", env_name],
         )
+        logger.info("W&B initialized")
     except Exception:
         logger.info("W&B init failed, training without W&B")
-
-    callbacks = [BalatroTrainingCallback()]
-    if run is not None:
-        callbacks.append(WandbCallback(verbose=0))
 
     model = PPO(
         "MlpPolicy",
@@ -133,12 +134,11 @@ def train(
         gae_lambda=0.95,
         clip_range=0.2,
         ent_coef=0.01,
-        tensorboard_log=None,
     )
 
     model.learn(
         total_timesteps=timesteps,
-        callback=callbacks,
+        callback=BalatroTrainingCallback(),
         progress_bar=True,
     )
 
@@ -146,27 +146,24 @@ def train(
     model.save(str(MODEL_PATH))
     logger.info(f"Model saved to {MODEL_PATH}.zip")
 
-    if run is not None:
-        wandb.finish()
+    try:
+        import wandb
+        if wandb.run is not None:
+            wandb.finish()
+    except ImportError:
+        pass
 
     env.close()
     return model
 
 
 # ---------------------------------------------------------------------------
-# RLBot — BaseBot subclass for evaluation logging
+# RLBot
 # ---------------------------------------------------------------------------
 
 class RLBot(BaseBot):
-    """
-    RL agent using a trained PPO model.
-    Inherits BaseBot for CSV + W&B logging consistency with other bots.
-
-    The game loop in BaseBot calls select_hand_action / select_shop_action /
-    select_blind_action — we map those to the PPO model's output.
-    """
-
     BOT_TYPE = "rl_bot"
+    WANDB_TAGS = ["rl_bot", "ppo"]
 
     def __init__(self, model_path: str = str(MODEL_PATH), port: int = 12346, **kwargs):
         super().__init__(port=port, **kwargs)
@@ -176,9 +173,6 @@ class RLBot(BaseBot):
             )
         self.model = PPO.load(model_path)
         logger.info(f"Loaded PPO model from {model_path}.zip")
-
-        # We need a throwaway env to encode observations
-        self._env = BalatroEnv(port=port)
 
     def _get_action(self, state: dict) -> int:
         from balatro_env import _encode_obs
@@ -191,34 +185,29 @@ class RLBot(BaseBot):
             _best_pair_hand, _find_flush, _find_straight,
             _worst_cards, N_HAND_ACTIONS
         )
-        action = self._get_action(state)
-        action = min(action, N_HAND_ACTIONS - 1)
-
+        action = min(self._get_action(state), N_HAND_ACTIONS - 1)
         cards = get_hand_cards(state)
         discards_left = get_discards_left(state)
 
-        if action == 0:
-            idxs = _best_pair_hand(cards)
-        elif action == 1:
-            if discards_left > 0:
-                return "discard", _worst_cards(cards, 3)
-            idxs = _best_pair_hand(cards)
-        elif action == 2:
+        if action == 1 and discards_left > 0:
+            return "discard", [int(i) for i in _worst_cards(cards, 3)]
+
+        if action == 2:
             idxs = _find_flush(cards) or _best_pair_hand(cards)
         elif action == 3:
             idxs = _find_straight(cards) or _best_pair_hand(cards)
         else:
             idxs = _best_pair_hand(cards)
 
-        idxs = [i for i in idxs if 0 <= i < len(cards)]
+        idxs = [int(i) for i in idxs if 0 <= i < len(cards)]
         if not idxs:
             idxs = list(range(min(5, len(cards))))
+        self._last_hand_type = "rl_play"
         return "play", idxs
 
     def select_shop_action(self, state: dict) -> list[dict]:
         from balatro_env import N_SHOP_ACTIONS
-        action = self._get_action(state)
-        action = min(action, N_SHOP_ACTIONS - 1)
+        action = min(self._get_action(state), N_SHOP_ACTIONS - 1)
 
         money = get_money(state)
         shop_cards = get_shop_cards(state)
@@ -232,7 +221,7 @@ class RLBot(BaseBot):
                 return [{"action": "reroll"}, {"action": "end_shop"}]
             return [{"action": "end_shop"}]
 
-        buy_idx = action - 1
+        buy_idx = int(action - 1)
         if buy_idx < len(shop_cards):
             cost = shop_cards[buy_idx].get("cost", {}).get("buy", 999)
             if cost <= money:
@@ -242,9 +231,7 @@ class RLBot(BaseBot):
 
     def select_blind_action(self, state: dict) -> str:
         from balatro_env import N_BLIND_ACTIONS
-        action = self._get_action(state)
-        action = min(action, N_BLIND_ACTIONS - 1)
-
+        action = min(self._get_action(state), N_BLIND_ACTIONS - 1)
         blind_type = get_blind_type(state)
         if action == 1 and blind_type != "boss":
             return "skip"
@@ -257,16 +244,17 @@ class RLBot(BaseBot):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PPO RL agent for Balatro")
-    parser.add_argument("--train", action="store_true", help="Train the PPO model")
-    parser.add_argument("--run", action="store_true", help="Run evaluation with trained model")
-    parser.add_argument("--timesteps", type=int, default=500_000)
-    parser.add_argument("--seeds", nargs="+", default=BENCHMARK_SEEDS)
-    parser.add_argument("--runs-per-seed", type=int, default=RUNS_PER_SEED)
-    parser.add_argument("--results", default="results.csv")
-    parser.add_argument("--port", type=int, default=12346)
-    parser.add_argument("--deck", default="RED")
-    parser.add_argument("--stake", default="WHITE")
-    parser.add_argument("--model-path", default=str(MODEL_PATH))
+    parser.add_argument("--train", action="store_true")
+    parser.add_argument("--run",   action="store_true")
+    parser.add_argument("--mock",  action="store_true", help="Train on fast mock env")
+    parser.add_argument("--timesteps",    type=int, default=500_000)
+    parser.add_argument("--seeds",        nargs="+", default=BENCHMARK_SEEDS)
+    parser.add_argument("--runs-per-seed",type=int, default=RUNS_PER_SEED)
+    parser.add_argument("--results",      default="results.csv")
+    parser.add_argument("--port",         type=int, default=12346)
+    parser.add_argument("--deck",         default="RED")
+    parser.add_argument("--stake",        default="WHITE")
+    parser.add_argument("--model-path",   default=str(MODEL_PATH))
     args = parser.parse_args()
 
     if args.train:
@@ -274,6 +262,7 @@ if __name__ == "__main__":
             timesteps=args.timesteps,
             seed=args.seeds[0],
             port=args.port,
+            use_mock=args.mock,
         )
 
     if args.run:
@@ -295,10 +284,10 @@ if __name__ == "__main__":
         completed = [r for r in results if r["outcome"] in ("won", "lost")]
         if completed:
             avg_round = sum(r["final_round"] for r in completed) / len(completed)
-            avg_ante = sum(r["final_ante"] for r in completed) / len(completed)
+            avg_ante  = sum(r["final_ante"]  for r in completed) / len(completed)
             wins = sum(1 for r in results if r["outcome"] == "won")
             print(f"\nSummary:")
             print(f"  Completed: {len(completed)}/{len(results)}")
             print(f"  Wins: {wins}")
             print(f"  Avg round: {avg_round:.2f}")
-            print(f"  Avg ante: {avg_ante:.2f}")
+            print(f"  Avg ante:  {avg_ante:.2f}")
