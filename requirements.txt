@@ -1,0 +1,25 @@
+# Balatro Research — Python 3.10
+# Install: pip install -r requirements.txt --break-system-packages
+
+# Game API
+httpx==0.28.1
+
+# LLM
+anthropic==0.104.1
+
+# Vector store + embeddings
+pinecone==9.0.1
+sentence-transformers==5.5.1
+
+# RL
+gymnasium==1.1.1
+stable-baselines3==2.6.0
+
+# Experiment tracking
+wandb==0.27.0
+
+# Analysis
+pandas==2.0.1
+scipy==1.10.1
+matplotlib==3.9.0
+numpy==1.26.4
