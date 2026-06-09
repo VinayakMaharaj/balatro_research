@@ -92,7 +92,7 @@ FIELDNAMES = [
     "jokers_bought",
     "rerolls_used",
     # Hand types played (qualitative)
-    "hands_by_type",          # JSON string: {"flush": 3, "pair": 2, ...}
+    "hands_by_type",
     # LLM-specific (empty for heuristic/RL bots)
     "llm_calls",
     "tokens_used",
@@ -138,6 +138,10 @@ class BaseBot:
 
     def select_blind_action(self, state: dict) -> str:
         raise NotImplementedError
+
+    def select_pack_action(self, state: dict) -> dict:
+        """Default: skip all packs. Override in LLM bots for reasoning."""
+        return {"action": "skip", "cards": []}
 
     # -----------------------------------------------------------------------
     # Game loop
@@ -201,7 +205,6 @@ class BaseBot:
                     action, cards = self.select_hand_action(state)
                     if action == "play":
                         metrics["hands_played"] += 1
-                        # Track hand type if subclass provides it
                         hand_type = getattr(self, "_last_hand_type", None)
                         if hand_type:
                             hand_type_counts[hand_type] = hand_type_counts.get(hand_type, 0) + 1
@@ -231,7 +234,7 @@ class BaseBot:
                     state = self._execute_shop_actions(state, metrics)
 
                 elif current_state_name == "SMODS_BOOSTER_OPENED":
-                    state = self.client.pack(skip=True)
+                    state = self._execute_pack_action(state)
 
                 elif current_state_name == "GAME_OVER":
                     metrics["outcome"] = "lost"
@@ -260,13 +263,13 @@ class BaseBot:
             except Exception:
                 pass
 
-            # Pull LLM stats from subclass if available
             if hasattr(self, "_total_llm_calls"):
                 metrics["llm_calls"] = self._total_llm_calls
             if hasattr(self, "_total_tokens_used"):
                 metrics["tokens_used"] = self._total_tokens_used
+                cost_per_1m = getattr(self, "_cost_per_1m_tokens", 0.80)
                 metrics["estimated_cost_usd"] = round(
-                    (self._total_tokens_used / 1_000_000) * 0.80, 6
+                    (self._total_tokens_used / 1_000_000) * cost_per_1m, 6
                 )
 
             metrics["hands_by_type"] = json.dumps(hand_type_counts)
@@ -307,7 +310,6 @@ class BaseBot:
                 game_num = run_idx * len(seeds) + seeds.index(seed) + 1
                 logger.info(f"[{game_num}/{total}] seed={seed} run={run_idx+1}/{runs_per_seed}")
 
-                # Reset per-game LLM counters if present
                 if hasattr(self, "_total_llm_calls"):
                     self._total_llm_calls = 0
                 if hasattr(self, "_total_tokens_used"):
@@ -341,6 +343,44 @@ class BaseBot:
         return all_results
 
     # -----------------------------------------------------------------------
+    # Pack execution
+    # -----------------------------------------------------------------------
+
+    def _execute_pack_action(self, state: dict) -> dict:
+        pack_decision = self.select_pack_action(state)
+        action = pack_decision.get("action", "skip")
+        cards = pack_decision.get("cards", [])
+        pack_cards = state.get("pack_cards", {}).get("cards", [])
+        choices = state.get("pack_cards", {}).get("choose", 1)
+
+        if action == "pick" and cards:
+            picked = 0
+            for card_idx in cards[:choices]:
+                if 0 <= int(card_idx) < len(pack_cards):
+                    try:
+                        state = self.client.pack(card=int(card_idx))
+                        picked += 1
+                    except BalatroError as e:
+                        logger.warning(f"Pack pick {card_idx} failed: {e.name}")
+            # Skip remaining slots
+            for _ in range(choices - picked):
+                try:
+                    state = self.client.pack(skip=True)
+                except BalatroError:
+                    state = self.client.gamestate()
+                    break
+        else:
+            # Skip all choices
+            for _ in range(choices):
+                try:
+                    state = self.client.pack(skip=True)
+                except BalatroError:
+                    state = self.client.gamestate()
+                    break
+
+        return state
+
+    # -----------------------------------------------------------------------
     # Shop execution
     # -----------------------------------------------------------------------
 
@@ -357,7 +397,7 @@ class BaseBot:
                     state = self.client.buy(voucher=action_dict["index"])
                 elif action == "buy_pack":
                     state = self.client.buy(pack=action_dict["index"])
-                    state = self.client.pack(skip=True)
+                    state = self._execute_pack_action(state)
                 elif action == "reroll":
                     state = self.client.reroll()
                     metrics["rerolls_used"] += 1

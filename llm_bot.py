@@ -160,6 +160,20 @@ def format_blinds(blinds: dict) -> str:
         lines.append(f"  {blind_key.upper()}: {name} (need {score} chips) [{status}]{effect_str}{tag_str}")
     return "\n".join(lines)
 
+def format_pack(state: dict) -> str:
+    pack_cards = state.get("pack_cards", {}).get("cards", [])
+    choices = state.get("pack_cards", {}).get("choose", 1)
+    if not pack_cards:
+        return "  (no cards available)"
+    lines = [f"  Choose {choices} card(s):"]
+    for i, card in enumerate(pack_cards):
+        label = card.get("label", "Unknown")
+        card_set = card.get("set", "")
+        v = card.get("value", {})
+        effect = v.get("effect", "") or card.get("effect", "")
+        lines.append(f"  {i}: {label} ({card_set}) - {effect}")
+    return "\n".join(lines)
+
 
 def format_state_for_llm(state: dict) -> str:
     state_name = state.get("state", "UNKNOWN")
@@ -238,7 +252,11 @@ JOKERS:
 Respond ONLY in this JSON format:
 {{"action": "select" or "skip", "reasoning": "brief"}}
 
-Rules: skipping small/big gives a tag (free joker, free card, or other bonus) — skip if you have a strong joker setup or a comfortable chip lead. Boss CANNOT be skipped. When in doubt on small blind, skip it."""
+Rules: Boss CANNOT be skipped. 
+SKIP STRATEGY: Only skip if you have 2+ jokers already OR the tag reward is exceptional (free rare joker).
+NEVER skip both small AND big blind with 0 jokers — you will die on the boss blind without economy.
+At ante 1 with no jokers: select small blind, select big blind, build economy first.
+At ante 2+ with 2+ jokers: skipping small blind for a good tag is fine."""
 
     return prompt
 
