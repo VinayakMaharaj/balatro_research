@@ -262,3 +262,11 @@ timestamp,bot_type,seed,deck,stake,outcome,duration_seconds,final_ante,peak_ante
 2026-06-08 19:19:49,rl_bot,AAAAAAA,RED,WHITE,lost,19.8,1,1,1,4,0,2,4,0,0,"{""rl_play"": 4}",0,0,0.0,
 2026-06-08 19:20:10,rl_bot,BBBBBBB,RED,WHITE,lost,23.8,1,1,1,4,0,2,4,0,0,"{""rl_play"": 4}",0,0,0.0,
 2026-06-08 19:20:36,rl_bot,CCCCCCC,RED,WHITE,incomplete,23.3,1,1,1,4,0,2,4,0,0,"{""rl_play"": 4}",0,0,0.0,
+2026-06-08 19:42:39,llm_bot,SEED001,RED,WHITE,lost,203.4,2,2,3,11,6,2,26,1,0,{},24,12305,0.009844,
+2026-06-08 19:51:56,rag_llm_bot,SEED001,RED,WHITE,lost,104.8,1,1,1,4,3,2,4,0,0,{},10,7735,0.006188,
+2026-06-08 19:57:26,llm_bot,SEED001,RED,WHITE,lost,120.6,1,1,1,4,4,1,4,0,0,{},10,6640,0.005312,
+2026-06-08 19:59:28,llm_bot,SEED002,RED,WHITE,error,11.2,1,1,0,0,0,1,4,0,0,{},2,532,0.000426,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-06-08 19:59:41,llm_bot,SEED003,RED,WHITE,lost,788.5,5,5,8,25,23,6,44,7,0,{},69,47137,0.03771,
+2026-06-08 20:15:55,rag_llm_bot,SEED001,RED,WHITE,lost,122.9,1,1,1,4,4,2,4,0,0,{},11,8986,0.007189,
+2026-06-08 20:18:00,rag_llm_bot,SEED002,RED,WHITE,error,13.6,1,1,0,0,0,2,4,0,0,{},2,909,0.000727,BalatroError: INVALID_STATE - Method 'skip' requires one of these states: BLIND_SELECT
+2026-06-08 20:18:16,rag_llm_bot,SEED003,RED,WHITE,error,227.7,3,3,2,7,5,6,16,2,0,{},23,17250,0.0138,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT

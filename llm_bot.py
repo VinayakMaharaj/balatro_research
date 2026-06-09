@@ -31,11 +31,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-haiku-4-5-20251001"
-MAX_TOKENS = 512
+MODEL = "claude-sonnet-4-6"
+MAX_TOKENS = 1024
 
 # Cost per 1M tokens (Haiku input+output blended estimate)
-COST_PER_1M_TOKENS = 0.80
+COST_PER_1M_TOKENS = 5.00
 
 
 # ---------------------------------------------------------------------------
