@@ -138,7 +138,7 @@ def train(timesteps=50_000_000, seed="AAAAAAA", port=12346,
         gae_lambda=0.95,
         clip_range=0.2,
         ent_coef=0.01,
-        tensorboard_log=str(MODEL_DIR / "tb_logs"),
+
     )
 
     cb = BalatroTrainingCallback()
