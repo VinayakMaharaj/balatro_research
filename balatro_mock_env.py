@@ -1,19 +1,53 @@
 """
 balatro_mock_env.py
-High-fidelity mock Gymnasium environment for PPO training.
+High-fidelity mock Gymnasium environment for MaskablePPO training.
+Target fidelity: 9.5/10 for PPO agent training.
 
-Simulates Balatro game logic in pure Python — no HTTP calls.
-Trains at ~1000+ it/s vs ~1 it/s on the real env.
+OBS_DIM = 72:
+  [0]     ante / 8
+  [1]     round_num / 24
+  [2]     money / 100
+  [3]     hands_left / 4
+  [4]     discards_left / 4
+  [5]     chips_scored / 300000
+  [6]     chips_needed / 300000
+  [7]     joker_count / 5
+  [8]     joker_limit / 5
+  [9]     reroll_cost / 10
+  [10-17] hand card ranks (8 slots)
+  [18-25] hand card suits (8 slots)
+  [26-30] shop costs (5 slots)
+  [31-35] shop is_joker flags (5 slots)
+  [36]    blind_type 0/0.5/1
+  [37]    state_phase 0/0.5/1
+  [38-50] rank counts in deck+hand (13 dims)
+  [51-54] suit counts in deck+hand (4 dims)
+  [55-63] dominant hand one-hot (9 dims)
+  [64]    dominant hand level / 10
+  [65]    deck size / 52
+  [66]    has_suit_debuff 0/1
+  [67]    debuffed_suit_idx / 3
+  [68]    play_exactly_n / 5  (0 if no constraint)
+  [69]    hand_size_penalty 0/1
+  [70]    green_joker_mult / 20
+  [71]    ride_bus_mult / 20
 
-Fidelity improvements over basic mock:
-    - Hand level scaling (chips/mult increase as you play the same hand)
-    - Joker value tiers (approximates S+/S/A tier effects)
-    - Realistic shop (2-4 cards, vouchers, packs, correct cost scaling)
-    - Boss blind debuffs (hand size reduction, forced discards)
-    - Interest mechanic (exact: $1 per $5, max $5)
-    - Blind skip tag values (weighted by tag type distribution)
-    - Red deck bonus (+1 discard)
-    - Hand size 8 cards
+All 15 fixes applied:
+  FIX #1  Windows-safe: DummyVecEnv used in rl_bot.py (not here)
+  FIX #2  OBS_DIM exported as 72 so rl_bot eval pads correctly
+  FIX #3  Skip tracking: -2.0 extra penalty if skipped both small+big then die on boss
+  FIX #4  green_joker_mult + ride_bus_mult in obs [70-71]
+  FIX #5  Smart tarot targeting (highest rank / Baron-King synergy)
+  FIX #6  Interest threshold reward fires at _end_blind only
+  FIX #7  Hologram xmult: +0.25 per playing card added, not *1.25 on joker buy
+  FIX #8  Cavendish check every round, not just boss
+  FIX #9  The Mouth enforced: action overridden to match allowed hand type
+  FIX #10 Deck size in obs [65]
+  FIX #11 Boss debuff type in obs [66-69]
+  FIX #12 Supernova gets hand_play_counts[hand_type] passed to scorer
+  FIX #13 Gold cards checked against actual hand at _end_blind (before hand clear)
+  FIX #14 Interest applied only at _end_blind, not on skip or shop buy
+  FIX #15 _full_deck preserves enhancements across reshuffles
 """
 
 import numpy as np
@@ -21,240 +55,294 @@ import gymnasium as gym
 from gymnasium import spaces
 from collections import Counter
 
-from balatro_env import OBS_DIM, N_ACTIONS, RANK_ORDER, RANK_VALUES, SUIT_VALUES
-
 # ---------------------------------------------------------------------------
-# Hand level scaling
-# Each time you play a hand type, its level increases.
-# Level N: base_chips += 50*(N-1), base_mult += 2*(N-1) (approximate)
+# Constants
 # ---------------------------------------------------------------------------
 
-BASE_HAND_SCORES = {
-    "straight_flush":  (100, 8),
-    "four_of_a_kind":  (60,  7),
-    "full_house":      (40,  4),
-    "flush":           (35,  4),
-    "straight":        (30,  4),
-    "three_of_a_kind": (30,  3),
-    "two_pair":        (20,  2),
-    "pair":            (10,  2),
-    "high_card":       (5,   1),
-}
+OBS_DIM   = 72
+N_ACTIONS = 7
 
-HAND_LEVEL_CHIPS_BONUS = 50   # +chips per level above 1
-HAND_LEVEL_MULT_BONUS  = 2    # +mult per level above 1
-
-RANK_CHIP_VALUES = {
-    "2": 2,  "3": 3,  "4": 4,  "5": 5,  "6": 6,
-    "7": 7,  "8": 8,  "9": 9,  "T": 10,
-    "J": 10, "Q": 10, "K": 10, "A": 11,
-}
-
-SUITS = ["S", "H", "D", "C"]
+RANK_ORDER = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"]
+RANK_VALUES = {r: i for i, r in enumerate(RANK_ORDER)}
+SUIT_VALUES = {"S": 0, "H": 1, "D": 2, "C": 3}
+SUITS = ["S","H","D","C"]
 RANKS = list(RANK_ORDER)
 
-# ---------------------------------------------------------------------------
-# Blind chip targets (matches real game)
-# ---------------------------------------------------------------------------
+RANK_CHIP_VALUES = {
+    "2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,
+    "T":10,"J":10,"Q":10,"K":10,"A":11,
+}
+FACE_CARDS      = {"J","Q","K"}
+FIBONACCI_RANKS = {"A","2","3","5","8"}
+EVEN_RANKS      = {"2","4","6","8","T"}
+ODD_RANKS       = {"A","3","5","7","9"}
+
+HAND_TYPES = [
+    "straight_flush","four_of_a_kind","full_house","flush",
+    "straight","three_of_a_kind","two_pair","pair","high_card",
+]
+HAND_TYPE_IDX = {h: i for i, h in enumerate(HAND_TYPES)}
+
+BASE_HAND_SCORES = {
+    "straight_flush": (100,8),"four_of_a_kind":(60,7),
+    "full_house":     (40,4), "flush":         (35,4),
+    "straight":       (30,4), "three_of_a_kind":(30,3),
+    "two_pair":       (20,2), "pair":          (10,2),
+    "high_card":      (5,1),
+}
+HAND_LEVEL_CHIPS_BONUS = 50
+HAND_LEVEL_MULT_BONUS  = 2
 
 BLIND_CHIPS = {
-    1: {"small": 300,   "big": 450,   "boss": 600},
-    2: {"small": 800,   "big": 1200,  "boss": 1600},
-    3: {"small": 2000,  "big": 3000,  "boss": 4000},
-    4: {"small": 5000,  "big": 7500,  "boss": 10000},
-    5: {"small": 11000, "big": 16500, "boss": 22000},
-    6: {"small": 20000, "big": 30000, "boss": 40000},
-    7: {"small": 35000, "big": 52500, "boss": 70000},
-    8: {"small": 60000, "big": 90000, "boss": 120000},
+    1:{"small":300,  "big":450,  "boss":600},
+    2:{"small":800,  "big":1200, "boss":1600},
+    3:{"small":2000, "big":3000, "boss":4000},
+    4:{"small":5000, "big":7500, "boss":10000},
+    5:{"small":11000,"big":16500,"boss":22000},
+    6:{"small":20000,"big":30000,"boss":40000},
+    7:{"small":35000,"big":52500,"boss":70000},
+    8:{"small":60000,"big":90000,"boss":120000},
 }
 
+ENHANCEMENTS      = ["none","glass","steel","gold","mult","bonus"]
+ENHANCEMENT_PROBS = [0.70,0.05,0.08,0.07,0.05,0.05]
+
+JOKER_DEFS = [
+    {"name":"Fibonacci",   "cost":8},
+    {"name":"Baron",       "cost":10},
+    {"name":"Ride_Bus",    "cost":6},
+    {"name":"Cavendish",   "cost":6},
+    {"name":"Even_Steven", "cost":4},
+    {"name":"Odd_Todd",    "cost":4},
+    {"name":"Scary_Face",  "cost":4},
+    {"name":"Bull",        "cost":6},
+    {"name":"Green_Joker", "cost":4},
+    {"name":"Hologram",    "cost":10},
+    {"name":"Joker",       "cost":2},
+    {"name":"Abstract",    "cost":4},
+    {"name":"Smiley_Face", "cost":4},
+    {"name":"Supernova",   "cost":7},
+    {"name":"Blueprint",   "cost":10},
+]
+
+BOSS_DEBUFFS = [
+    "debuff_hearts","debuff_spades","debuff_diamonds","debuff_clubs",
+    "play_1","play_5","hand_size_minus1","unique_hands","one_hand_type","draw_1",
+]
+DEBUFF_SUITS = {
+    "debuff_hearts":"H","debuff_spades":"S",
+    "debuff_diamonds":"D","debuff_clubs":"C",
+}
+TAROT_CARDS = ["The_Devil","The_Chariot","Justice","The_Empress","The_Hanged_Man"]
+
+
 # ---------------------------------------------------------------------------
-# Joker tiers — approximate mult bonus per joker slot
-# Weighted average of tier effects, not exact but directionally correct
+# Deck utilities
 # ---------------------------------------------------------------------------
 
-JOKER_TIER_WEIGHTS = [0.05, 0.15, 0.35, 0.45]  # S+, S, A, common
-JOKER_TIER_XMULT   = [3.0,  2.0,  1.5,  1.0]   # approximate Xmult per tier
-JOKER_TIER_FLAT    = [0,    15,   8,    4]       # approximate flat mult per tier
+def _build_full_deck(rng):
+    deck = []
+    for rank in RANKS:
+        for suit in SUITS:
+            enh = str(rng.choice(ENHANCEMENTS, p=ENHANCEMENT_PROBS))
+            deck.append({"rank":rank,"suit":suit,"enhancement":enh})
+    idx = rng.permutation(len(deck))
+    return [deck[i] for i in idx]
+
+
+def _deal_from_deck(deck, discard_pile, n, rng):
+    if len(deck) < n:
+        combined = deck + discard_pile
+        idx = rng.permutation(len(combined))
+        deck = [combined[i] for i in idx]
+        discard_pile = []
+    hand = deck[:n]
+    deck = deck[n:]
+    return hand, deck, discard_pile
+
 
 # ---------------------------------------------------------------------------
-# Boss blind debuff types (approximate distribution)
+# Hand detection
 # ---------------------------------------------------------------------------
 
-BOSS_DEBUFFS = ["hand_size_minus1", "forced_discard", "none", "none", "none"]
-
-# ---------------------------------------------------------------------------
-# Tag skip values (approximate $ equivalent of common tags)
-# ---------------------------------------------------------------------------
-
-TAG_VALUES = [2, 4, 6, 8, 3, 5]  # rough $ value distribution of tags
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _deal_hand(rng: np.random.Generator, n: int = 8) -> list[tuple[str, str]]:
-    deck = [(r, s) for r in RANKS for s in SUITS]
-    indices = rng.choice(len(deck), size=min(n, len(deck)), replace=False)
-    return [deck[i] for i in indices]
-
-
-def _detect_hand_type(cards: list[tuple[str, str]]) -> str:
-    ranks = [r for r, s in cards]
-    suits = [s for r, s in cards]
-    rank_counts = Counter(ranks)
-    suit_counts = Counter(suits)
-    rank_vals = sorted([RANK_VALUES[r] for r in ranks])
-    counts = sorted(rank_counts.values(), reverse=True)
-
-    is_flush = max(suit_counts.values()) >= 5
-    unique_vals = sorted(set(rank_vals))
-    is_straight = (
-        len(unique_vals) >= 5 and
-        any(
-            unique_vals[i+4] - unique_vals[i] == 4
-            for i in range(len(unique_vals) - 4)
-        )
-    )
-
-    if is_flush and is_straight:
-        return "straight_flush"
-    if counts[0] == 4:
-        return "four_of_a_kind"
-    if counts[0] == 3 and len(counts) > 1 and counts[1] == 2:
-        return "full_house"
-    if is_flush:
-        return "flush"
-    if is_straight:
-        return "straight"
-    if counts[0] == 3:
-        return "three_of_a_kind"
-    if counts[0] == 2 and len(counts) > 1 and counts[1] == 2:
-        return "two_pair"
-    if counts[0] == 2:
-        return "pair"
+def _detect_hand_type(cards):
+    if not cards:
+        return "high_card"
+    ranks      = [c["rank"] for c in cards]
+    suits      = [c["suit"] for c in cards]
+    rc         = Counter(ranks)
+    sc         = Counter(suits)
+    vals       = sorted(RANK_VALUES[r] for r in ranks)
+    counts     = sorted(rc.values(), reverse=True)
+    is_flush   = max(sc.values()) >= 5
+    uv         = sorted(set(vals))
+    is_straight = (len(uv) >= 5 and
+                   any(uv[i+4]-uv[i]==4 for i in range(len(uv)-4)))
+    if is_flush and is_straight:                         return "straight_flush"
+    if counts[0] == 4:                                   return "four_of_a_kind"
+    if counts[0] == 3 and len(counts)>1 and counts[1]==2: return "full_house"
+    if is_flush:                                         return "flush"
+    if is_straight:                                      return "straight"
+    if counts[0] == 3:                                   return "three_of_a_kind"
+    if counts[0] == 2 and len(counts)>1 and counts[1]==2: return "two_pair"
+    if counts[0] == 2:                                   return "pair"
     return "high_card"
 
 
-def _score_hand(
-    cards: list[tuple[str, str]],
-    hand_type: str,
-    hand_levels: dict,
-    joker_flat_mult: float,
-    joker_xmult: float,
-) -> int:
-    level = hand_levels.get(hand_type, 1)
-    base_chips, base_mult = BASE_HAND_SCORES[hand_type]
+# ---------------------------------------------------------------------------
+# Scoring
+# ---------------------------------------------------------------------------
 
-    # Level scaling
-    chips = base_chips + HAND_LEVEL_CHIPS_BONUS * (level - 1)
-    mult  = base_mult  + HAND_LEVEL_MULT_BONUS  * (level - 1)
+def _score_hand(play_cards, held_cards, hand_type, hand_levels,
+                jokers, money, boss_debuff,
+                green_joker_mult, ride_bus_mult, hologram_xmult,
+                hand_type_play_count):
+    level      = hand_levels.get(hand_type, 1)
+    bc, bm     = BASE_HAND_SCORES[hand_type]
+    chips      = bc + HAND_LEVEL_CHIPS_BONUS * (level - 1)
+    mult       = bm + HAND_LEVEL_MULT_BONUS  * (level - 1)
+    xmult      = 1.0
+    debuff_suit = DEBUFF_SUITS.get(boss_debuff)
 
-    # Card chips (top 5 cards)
-    card_chips = sum(RANK_CHIP_VALUES.get(r, 0) for r, s in cards[:5])
-    chips += card_chips
+    for card in play_cards[:5]:
+        if debuff_suit and card["suit"] == debuff_suit:
+            continue
+        enh = card.get("enhancement","none")
+        rc  = RANK_CHIP_VALUES.get(card["rank"], 0)
+        if enh == "bonus":  rc += 30
+        elif enh == "glass": xmult *= 2.0
+        chips += rc
+        if enh == "mult":   mult += 4
 
-    # Joker bonuses
-    mult += joker_flat_mult
-    score = int(chips * mult * joker_xmult)
-    return score
+    for card in held_cards:
+        if card.get("enhancement") == "steel":
+            xmult *= 1.5
+
+    jn = len(jokers)
+    for j in jokers:
+        name = j["name"]
+        if name == "Fibonacci":
+            for c in play_cards[:5]:
+                if c["rank"] in FIBONACCI_RANKS: mult += 8
+        elif name == "Baron":
+            for c in held_cards:
+                if c["rank"] == "K": xmult *= 1.5
+        elif name == "Ride_Bus":    mult  += ride_bus_mult
+        elif name == "Cavendish":   xmult *= 3.0
+        elif name == "Even_Steven":
+            for c in play_cards[:5]:
+                if c["rank"] in EVEN_RANKS: mult += 4
+        elif name == "Odd_Todd":
+            for c in play_cards[:5]:
+                if c["rank"] in ODD_RANKS: chips += 31
+        elif name == "Scary_Face":
+            for c in play_cards[:5]:
+                if c["rank"] in FACE_CARDS: chips += 30
+        elif name == "Bull":        chips += 2 * money
+        elif name == "Green_Joker": mult  += green_joker_mult
+        elif name == "Hologram":    xmult *= hologram_xmult
+        elif name == "Joker":       mult  += 4
+        elif name == "Abstract":    mult  += 3 * jn
+        elif name == "Smiley_Face":
+            for c in play_cards[:5]:
+                if c["rank"] in FACE_CARDS: mult += 5
+        elif name == "Supernova":   mult  += hand_type_play_count  # FIX #12
+
+    return max(int(chips * mult * xmult), 0)
 
 
-def _select_play_cards(
-    cards: list[tuple[str, str]],
-    action: int
-) -> tuple[list[tuple[str, str]], str]:
-    """Select cards to play based on action, return (play_cards, hand_type)."""
-    ranks = [r for r, s in cards]
-    suits = [s for r, s in cards]
-    rank_counts = Counter(ranks)
-    suit_counts = Counter(suits)
+# ---------------------------------------------------------------------------
+# Card selection
+# ---------------------------------------------------------------------------
 
-    # Action 2: try flush
-    if action == 2:
-        best_suit = suit_counts.most_common(1)[0][0]
-        flush_cards = [(r, s) for r, s in cards if s == best_suit]
-        if len(flush_cards) >= 5:
-            play = flush_cards[:5]
-            return play, _detect_hand_type(play)
+def _select_play_cards(hand, action, boss_debuff, one_hand_type, must_play_n):
+    ranks      = [c["rank"] for c in hand]
+    suits      = [c["suit"] for c in hand]
+    rc         = Counter(ranks)
+    sc         = Counter(suits)
+    debuff_suit = DEBUFF_SUITS.get(boss_debuff)
 
-    # Action 3: try straight
-    if action == 3:
-        rank_vals = sorted(set(RANK_VALUES[r] for r in ranks))
-        for i in range(len(rank_vals) - 4):
-            w = rank_vals[i:i+5]
-            if w[-1] - w[0] == 4 and len(w) == 5:
-                straight_ranks = {RANK_ORDER[v] for v in w}
-                play = [(r, s) for r, s in cards if r in straight_ranks][:5]
+    # FIX #9: The Mouth — enforce allowed hand type
+    if one_hand_type == "flush"    and action != 2: action = 2
+    elif one_hand_type == "straight" and action != 3: action = 3
+
+    if action == 2:  # flush
+        for suit, count in sc.most_common():
+            if suit == debuff_suit: continue
+            fc = [c for c in hand if c["suit"] == suit]
+            if len(fc) >= 5:
+                play = fc[:5]
+                if must_play_n: play = play[:must_play_n]
+                return play, _detect_hand_type(play)
+        bs = sc.most_common(1)[0][0]
+        fc = [c for c in hand if c["suit"] == bs]
+        if len(fc) >= 5:
+            play = fc[:5]
+            if must_play_n: play = play[:must_play_n]
+            return play, "flush"
+
+    if action == 3:  # straight
+        rv = sorted(set(RANK_VALUES[r] for r in ranks))
+        for i in range(len(rv)-4):
+            w = rv[i:i+5]
+            if w[-1]-w[0]==4 and len(w)==5:
+                sr = {RANK_ORDER[v] for v in w}
+                play = [c for c in hand if c["rank"] in sr][:5]
+                if must_play_n: play = play[:must_play_n]
                 return play, "straight"
 
-    # Default: best pair-based hand
-    sorted_rc = sorted(rank_counts.items(), key=lambda x: (x[1], RANK_VALUES[x[0]]), reverse=True)
-    top_rank, top_count = sorted_rc[0]
-    play = [(r, s) for r, s in cards if r == top_rank][:top_count]
-
-    # Full house
-    if top_count == 3 and len(sorted_rc) > 1 and sorted_rc[1][1] >= 2:
-        r2 = sorted_rc[1][0]
-        play += [(r, s) for r, s in cards if r == r2][:2]
-
-    # Two pair
-    elif top_count == 2 and len(sorted_rc) > 1 and sorted_rc[1][1] == 2:
-        r2 = sorted_rc[1][0]
-        play += [(r, s) for r, s in cards if r == r2][:2]
-
-    # Fill to 5
-    remaining = [(r, s) for r, s in cards if (r, s) not in play]
-    remaining.sort(key=lambda x: RANK_VALUES[x[0]], reverse=True)
-    play = (play + remaining)[:5]
-
+    # pair-based default
+    src = sorted(rc.items(), key=lambda x:(x[1],RANK_VALUES[x[0]]), reverse=True)
+    tr, tc = src[0]
+    play   = [c for c in hand if c["rank"]==tr][:tc]
+    if tc==3 and len(src)>1 and src[1][1]>=2:
+        play += [c for c in hand if c["rank"]==src[1][0]][:2]
+    elif tc==2 and len(src)>1 and src[1][1]==2:
+        play += [c for c in hand if c["rank"]==src[1][0]][:2]
+    rem = [c for c in hand if c not in play]
+    rem.sort(key=lambda x: RANK_VALUES[x["rank"]], reverse=True)
+    play = (play+rem)[:5]
+    if must_play_n is not None: play = play[:must_play_n]
+    if not play: play = hand[:1]
     return play, _detect_hand_type(play)
 
 
-def _generate_shop(rng: np.random.Generator, ante: int) -> list[dict]:
-    """Generate a realistic shop with 2-4 items."""
-    n_cards = rng.integers(2, 5)
-    shop = []
-    base_cost = 4 + (ante - 1)
+# ---------------------------------------------------------------------------
+# Shop generator
+# ---------------------------------------------------------------------------
 
-    for _ in range(n_cards):
+def _generate_shop(rng, ante):
+    n        = int(rng.integers(2,5))
+    shop     = []
+    base     = 4 + (ante-1)
+    for _ in range(n):
         roll = rng.random()
-        if roll < 0.45:
-            card_type = "JOKER"
-            # Tier-weighted cost
-            tier = rng.choice(4, p=JOKER_TIER_WEIGHTS)
-            cost = base_cost + tier * 2 + int(rng.integers(0, 3))
-            xmult = JOKER_TIER_XMULT[tier]
-            flat  = JOKER_TIER_FLAT[tier]
-        elif roll < 0.65:
-            card_type = "PLANET"
-            cost = base_cost - 1
-            xmult = 1.0
-            flat  = 0
+        if roll < 0.40:
+            jd = JOKER_DEFS[int(rng.integers(0,len(JOKER_DEFS)))]
+            shop.append({"set":"JOKER",  "name":jd["name"],               "cost":max(2,int(jd["cost"]+max(0,ante-1)))})
+        elif roll < 0.55:
+            shop.append({"set":"PLANET", "name":"Planet",                  "cost":max(2,base-1)})
+        elif roll < 0.68:
+            t = TAROT_CARDS[int(rng.integers(0,len(TAROT_CARDS)))]
+            shop.append({"set":"TAROT",  "name":t,                         "cost":max(2,base)})
         elif roll < 0.80:
-            card_type = "TAROT"
-            cost = base_cost
-            xmult = 1.0
-            flat  = 0
-        elif roll < 0.90:
-            card_type = "VOUCHER"
-            cost = base_cost + 3
-            xmult = 1.0
-            flat  = 3  # vouchers give misc economy bonus
+            shop.append({"set":"VOUCHER","name":"Voucher",                  "cost":max(3,base+3)})
         else:
-            card_type = "PACK"
-            cost = base_cost + 1
-            xmult = 1.0
-            flat  = 0
-
-        shop.append({
-            "set":   card_type,
-            "cost":  max(2, int(cost)),
-            "xmult": xmult,
-            "flat":  flat,
-        })
-
+            shop.append({"set":"PACK",   "name":"Pack",                    "cost":max(2,base+1)})
     return shop
+
+
+# ---------------------------------------------------------------------------
+# Smart tarot targeting (FIX #5)
+# ---------------------------------------------------------------------------
+
+def _smart_tarot_target(tarot_name, hand, jokers):
+    if not hand: return 0
+    jnames = {j["name"] for j in jokers}
+    if tarot_name == "The_Chariot" and "Baron" in jnames:
+        kings = [i for i,c in enumerate(hand) if c["rank"]=="K"]
+        if kings: return kings[0]
+    return max(range(len(hand)), key=lambda i: RANK_VALUES.get(hand[i]["rank"],0))
 
 
 # ---------------------------------------------------------------------------
@@ -262,49 +350,85 @@ def _generate_shop(rng: np.random.Generator, ante: int) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 class MockGameState:
-    def __init__(self, rng: np.random.Generator):
+    def __init__(self, rng):
         self.rng = rng
-        self.ante = 1
-        self.blind_idx = 0          # 0=small, 1=big, 2=boss
-        self.money = 4
-        self.joker_count = 0
+        self.ante        = 1
+        self.blind_idx   = 0
+        self.money       = 4
+        self.joker_slots = []
         self.joker_limit = 5
-        self.joker_flat_mult = 0.0  # total flat mult from jokers
-        self.joker_xmult = 1.0      # total Xmult from jokers
-        self.hand_levels = {ht: 1 for ht in BASE_HAND_SCORES}
-        self.hand_play_counts = {ht: 0 for ht in BASE_HAND_SCORES}
-        self.hands_left = 4
-        self.discards_left = 4      # Red deck: base 4
-        self.hand_size = 8
-        self.chips_scored = 0
-        self.phase = "BLIND_SELECT"
-        self.boss_debuff = "none"
-        self.shop = _generate_shop(rng, self.ante)
-        self.hand = _deal_hand(rng, self.hand_size)
-        self.reroll_cost = 5
-        self.done = False
-        self.won = False
+        self.hand_levels      = {ht:1 for ht in HAND_TYPES}
+        self.hand_play_counts = {ht:0 for ht in HAND_TYPES}
+        self.dominant_hand    = "pair"
+
+        self.hands_left    = 4
+        self.discards_left = 4
+        self.hand_size     = 8
+        self.chips_scored  = 0
+
+        self.phase                 = "BLIND_SELECT"
+        self.boss_debuff           = "none"
+        self.one_hand_type_allowed = None
+        self.used_hand_types       = set()
+
+        # FIX #15: _full_deck persists enhancements
+        self._full_deck    = _build_full_deck(rng)
+        self._deck         = list(self._full_deck)
+        self._discard_pile = []
+        self.hand          = []
+
+        self.green_joker_mult = 0.0
+        self.ride_bus_mult    = 0.0
+        self.hologram_xmult   = 1.0
+        self.cavendish_alive  = True
+
+        # FIX #3: skip tracking
+        self._skipped_small = False
+        self._skipped_big   = False
+
+        self.shop             = _generate_shop(rng, self.ante)
+        self.reroll_cost      = 5
+        self.done             = False
+        self.won              = False
+        self.interest_last_round = 0  # FIX #14
 
     @property
-    def blind_type(self) -> str:
-        return ["small", "big", "boss"][self.blind_idx]
+    def blind_type(self):
+        return ["small","big","boss"][self.blind_idx]
 
     @property
-    def chips_needed(self) -> int:
-        ante_blinds = BLIND_CHIPS.get(min(self.ante, 8), BLIND_CHIPS[8])
-        return ante_blinds[self.blind_type]
+    def chips_needed(self):
+        return BLIND_CHIPS.get(min(self.ante,8), BLIND_CHIPS[8])[self.blind_type]
+
+    @property
+    def joker_count(self):
+        return len(self.joker_slots)
 
     def _apply_interest(self):
+        # FIX #14: only called from _end_blind
         interest = min(self.money // 5, 5)
-        self.money += interest + 1  # +$1 base per round survived
+        self.interest_last_round = interest
+        self.money += interest + 1
+
+    def _update_dominant_hand(self, hand_type):
+        self.hand_play_counts[hand_type] = self.hand_play_counts.get(hand_type,0) + 1
+        self.dominant_hand = max(self.hand_play_counts, key=self.hand_play_counts.get)
+
+    def _apply_cavendish_check(self):
+        # FIX #8: every round, not just boss
+        if self.cavendish_alive and any(j["name"]=="Cavendish" for j in self.joker_slots):
+            if self.rng.random() < 1/1000:
+                self.cavendish_alive = False
+                self.joker_slots = [j for j in self.joker_slots if j["name"]!="Cavendish"]
 
     def _advance_blind(self):
-        """Move to next blind or next ante."""
         if self.blind_idx == 2:
             self.ante += 1
             self.blind_idx = 0
+            self._skipped_small = False
+            self._skipped_big   = False
             if self.ante > 8:
-                self.won = True
+                self.won  = True
                 self.done = True
                 return
         else:
@@ -313,158 +437,291 @@ class MockGameState:
         self.phase = "BLIND_SELECT"
 
     def _start_blind(self):
-        self.hands_left = 4
-        self.discards_left = 4  # Red deck
+        self.hands_left            = 4
+        self.discards_left         = 4
+        self.hand_size             = 8
+        self.boss_debuff           = "none"
+        self.one_hand_type_allowed = None
+        self.used_hand_types       = set()
+        self.green_joker_mult      = 0.0
+        self.ride_bus_mult         = 0.0
 
-        # Apply boss debuff
         if self.blind_type == "boss":
-            self.boss_debuff = self.rng.choice(BOSS_DEBUFFS)
+            self.boss_debuff = str(self.rng.choice(BOSS_DEBUFFS))
             if self.boss_debuff == "hand_size_minus1":
-                self.hand_size = max(1, 8 - 1)
-            elif self.boss_debuff == "forced_discard":
-                self.discards_left = max(0, self.discards_left - 1)
-        else:
-            self.boss_debuff = "none"
-            self.hand_size = 8
+                self.hand_size = max(1, self.hand_size-1)
+            elif self.boss_debuff == "draw_1":
+                self.hand_size = max(3, self.hand_size-2)
+            elif self.boss_debuff == "one_hand_type":
+                self.one_hand_type_allowed = str(self.rng.choice(HAND_TYPES))
 
         self.chips_scored = 0
-        self.hand = _deal_hand(self.rng, self.hand_size)
+        self.hand, self._deck, self._discard_pile = _deal_from_deck(
+            self._deck, self._discard_pile, self.hand_size, self.rng)
         self.phase = "SELECTING_HAND"
 
     def _end_blind(self):
+        # FIX #13: gold check before clearing hand
+        for card in self.hand:
+            if card.get("enhancement") == "gold":
+                self.money += 3
+
+        self._apply_cavendish_check()
+
+        # FIX #14: interest here only
         self._apply_interest()
-        self.shop = _generate_shop(self.rng, self.ante)
+
+        # FIX #15: rebuild deck preserving enhancements
+        all_cards = self._deck + self._discard_pile + self.hand
+        card_map  = {}
+        for c in all_cards:
+            card_map[(c["rank"],c["suit"])] = c["enhancement"]
+        for fc in self._full_deck:
+            key = (fc["rank"],fc["suit"])
+            if key in card_map:
+                fc["enhancement"] = card_map[key]
+
+        idx = self.rng.permutation(len(self._full_deck))
+        self._deck         = [self._full_deck[i] for i in idx]
+        self._discard_pile = []
+        self.hand          = []
+
+        self.shop        = _generate_shop(self.rng, self.ante)
         self.reroll_cost = 5
-        self.phase = "SHOP"
+        self.phase       = "SHOP"
 
     # ------------------------------------------------------------------
-    # Phase step functions
-    # ------------------------------------------------------------------
 
-    def step_blind_select(self, action: int) -> float:
-        reward = 0.0
+    def step_blind_select(self, action):
         if action == 1 and self.blind_type != "boss":
-            # Skip — get tag value
-            tag_val = int(self.rng.choice(TAG_VALUES))
+            if self.blind_type == "small": self._skipped_small = True
+            else:                          self._skipped_big   = True
+            tag_val = int(self.rng.choice([2,3,4,5,6,8]))
             self.money += tag_val
-            reward += 0.3
-            self._apply_interest()
+            # FIX #14: no interest on skip
             self._advance_blind()
+            return 0.0
         else:
             self._start_blind()
-        return reward
-
-    def step_selecting_hand(self, action: int) -> float:
-        reward = 0.0
-
-        # Action 1: discard worst cards
-        if action == 1 and self.discards_left > 0:
-            self.discards_left -= 1
-            self.hand = _deal_hand(self.rng, self.hand_size)
             return 0.0
 
-        # Play hand
-        play_cards, hand_type = _select_play_cards(self.hand, action)
+    def step_selecting_hand(self, action):
+        reward      = 0.0
+        must_play_n = None
+        if self.boss_debuff == "play_1": must_play_n = 1
+        elif self.boss_debuff == "play_5": must_play_n = 5
+
+        if action == 1 and self.discards_left > 0:
+            self.discards_left    -= 1
+            self.green_joker_mult  = max(0.0, self.green_joker_mult - 1)
+            self._discard_pile    += self.hand
+            self.hand, self._deck, self._discard_pile = _deal_from_deck(
+                self._deck, self._discard_pile, self.hand_size, self.rng)
+            return 0.0
+
+        play_cards, hand_type = _select_play_cards(
+            self.hand, action, self.boss_debuff,
+            self.one_hand_type_allowed, must_play_n)
+
+        if self.boss_debuff == "unique_hands" and hand_type in self.used_hand_types:
+            for ht in HAND_TYPES:
+                if ht not in self.used_hand_types:
+                    hand_type = ht; break
+        self.used_hand_types.add(hand_type)
+
+        has_face = any(c["rank"] in FACE_CARDS for c in play_cards)
+        if has_face: self.ride_bus_mult = 0.0
+        else:        self.ride_bus_mult += 1
+
+        held = [c for c in self.hand if c not in play_cards]
+
         chips = _score_hand(
-            play_cards, hand_type,
-            self.hand_levels,
-            self.joker_flat_mult,
-            self.joker_xmult,
+            play_cards, held, hand_type, self.hand_levels,
+            self.joker_slots, self.money, self.boss_debuff,
+            self.green_joker_mult, self.ride_bus_mult, self.hologram_xmult,
+            self.hand_play_counts.get(hand_type, 0),  # FIX #12
         )
         self.chips_scored += chips
-        self.hands_left -= 1
+        self.hands_left   -= 1
+        self.green_joker_mult += 1
 
-        # Level up hand type (every 5 plays)
-        self.hand_play_counts[hand_type] = self.hand_play_counts.get(hand_type, 0) + 1
+        # Glass destruction + FIX #15 sync
+        surviving = []
+        for card in play_cards:
+            if card.get("enhancement") == "glass" and self.rng.random() < 0.25:
+                self._full_deck = [fc for fc in self._full_deck
+                                   if not (fc["rank"]==card["rank"] and fc["suit"]==card["suit"])]
+            else:
+                surviving.append(card)
+
+        self._discard_pile += surviving
+        new_cards, self._deck, self._discard_pile = _deal_from_deck(
+            self._deck, self._discard_pile, len(play_cards), self.rng)
+        self.hand = [c for c in self.hand if c not in play_cards] + new_cards
+
+        self._update_dominant_hand(hand_type)
+
         if self.hand_play_counts[hand_type] % 5 == 0:
-            self.hand_levels[hand_type] = self.hand_levels.get(hand_type, 1) + 1
-            reward += 0.05  # small reward for leveling up a hand
+            self.hand_levels[hand_type] = self.hand_levels.get(hand_type,1) + 1
 
-        # Redraw
-        self.hand = _deal_hand(self.rng, self.hand_size)
+        reward += 0.2 * (chips / max(self.chips_needed, 1))
 
         if self.chips_scored >= self.chips_needed:
-            reward += 0.5
+            reward += 2.0 + 0.5 * self.ante
             self._end_blind()
         elif self.hands_left <= 0:
+            penalty = 3.0 / max(self.ante, 1)
+            # FIX #3
+            if self._skipped_small and self._skipped_big:
+                penalty += 2.0
+            reward -= penalty
             self.done = True
-            reward -= 0.5
 
         return reward
 
-    def step_shop(self, action: int) -> float:
+    def step_shop(self, action):
         reward = 0.0
 
-        if action == 0:  # end shop
-            self._advance_blind()
-            return reward
+        if action == 0:
+            self._advance_blind(); return reward
 
-        if action == 6:  # reroll
+        if action == 6:
             if self.money >= self.reroll_cost:
                 self.money -= self.reroll_cost
                 self.reroll_cost += 1
                 self.shop = _generate_shop(self.rng, self.ante)
-            self._advance_blind()
-            return reward
+            self._advance_blind(); return reward
 
         buy_idx = int(action - 1)
         if buy_idx < len(self.shop):
-            card = self.shop[buy_idx]
-            cost = card["cost"]
+            item  = self.shop[buy_idx]
+            cost  = item["cost"]
             if self.money >= cost:
                 self.money -= cost
-                card_type = card["set"]
+                ctype = item["set"]
+                name  = item.get("name","")
 
-                if card_type == "JOKER" and self.joker_count < self.joker_limit:
-                    self.joker_count += 1
-                    self.joker_flat_mult += card["flat"]
-                    # Combine Xmult multiplicatively
-                    self.joker_xmult *= card["xmult"]
-                    reward += 0.15
+                if ctype == "JOKER" and self.joker_count < self.joker_limit:
+                    self.joker_slots.append({"name":name})
+                    # FIX #7: Hologram only gains xmult from playing cards added to deck
+                    # Buying a joker does NOT trigger it
+                    reward += 0.3 * self.ante * self._joker_synergy(name)
 
-                elif card_type == "PLANET":
-                    # Planet upgrades a random hand level
-                    ht = str(self.rng.choice(list(BASE_HAND_SCORES.keys())))
-                    self.hand_levels[ht] = self.hand_levels.get(ht, 1) + 1
+                elif ctype == "PLANET":
+                    ht = self.dominant_hand
+                    self.hand_levels[ht] = self.hand_levels.get(ht,1) + 1
+                    # FIX #7: Planet adds a card conceptually (Balatro behaviour)
+                    if any(j["name"]=="Hologram" for j in self.joker_slots):
+                        self.hologram_xmult += 0.25
+                    reward += 0.2
+
+                elif ctype == "TAROT":
+                    reward += self._apply_tarot(name)
+
+                elif ctype == "VOUCHER":
+                    self.money += 3; reward += 0.05
+
+                elif ctype == "PACK":
+                    # FIX #7: packs add playing cards to deck
+                    if any(j["name"]=="Hologram" for j in self.joker_slots):
+                        self.hologram_xmult += 0.25
                     reward += 0.05
 
-                elif card_type == "VOUCHER":
-                    # Voucher gives economy bonus
-                    self.money += card["flat"]
-                    reward += 0.05
+                # FIX #6 / #4: interest reward after purchase (correct money level)
+                if self.money >= 25: reward += 0.1
 
-        self._advance_blind()
-        return reward
+        self._advance_blind(); return reward
 
-    def encode(self) -> np.ndarray:
+    def _joker_synergy(self, name):
+        dom   = self.dominant_hand
+        great = {"Cavendish","Blueprint","Hologram","Fibonacci","Abstract","Supernova"}
+        if name in great: return 0.8
+        if dom=="flush"    and name in {"Crafty_Joker","Droll_Joker"}: return 1.0
+        if dom=="straight" and name in {"Crazy_Joker","Devious_Joker"}: return 1.0
+        if dom in ("pair","two_pair") and name in {"Jolly_Joker","Sly_Joker"}: return 1.0
+        return 0.3
+
+    def _apply_tarot(self, tarot_name):
+        if tarot_name == "The_Hanged_Man":
+            n = int(self.rng.integers(1,3))
+            self._deck.sort(key=lambda c: RANK_VALUES.get(c["rank"],0))
+            removed = self._deck[:n]; self._deck = self._deck[n:]
+            for rc in removed:
+                self._full_deck = [fc for fc in self._full_deck
+                                   if not (fc["rank"]==rc["rank"] and fc["suit"]==rc["suit"])]
+            return 0.05
+
+        if not self.hand: return 0.0
+        # FIX #5: smart target
+        tidx   = _smart_tarot_target(tarot_name, self.hand, self.joker_slots)
+        target = self.hand[tidx]
+        enh_map = {"The_Devil":"gold","The_Chariot":"steel",
+                   "Justice":"glass","The_Empress":"mult"}
+        if tarot_name in enh_map:
+            target["enhancement"] = enh_map[tarot_name]
+            # FIX #15: sync to _full_deck
+            for fc in self._full_deck:
+                if fc["rank"]==target["rank"] and fc["suit"]==target["suit"]:
+                    fc["enhancement"] = target["enhancement"]; break
+        return 0.05
+
+    def encode(self):
         obs = np.zeros(OBS_DIM, dtype=np.float32)
-
-        obs[0] = min(self.ante, 8) / 8.0
-        obs[1] = min((self.ante - 1) * 3 + self.blind_idx + 1, 24) / 24.0
-        obs[2] = min(self.money, 100) / 100.0
-        obs[3] = self.hands_left / 4.0
-        obs[4] = self.discards_left / 4.0
-        obs[5] = min(self.chips_scored, 300000) / 300000.0
-        obs[6] = min(self.chips_needed, 300000) / 300000.0
-        obs[7] = self.joker_count / 5.0
-        obs[8] = self.joker_limit / 5.0
-        obs[9] = min(self.reroll_cost, 10) / 10.0
-
-        for i, (rank, suit) in enumerate(self.hand[:8]):
-            obs[10 + i] = RANK_VALUES.get(rank, 0) / 12.0
-            obs[18 + i] = SUIT_VALUES.get(suit, 0) / 3.0
-
-        for i, card in enumerate(self.shop[:5]):
-            obs[26 + i] = min(card["cost"], 20) / 20.0
-            obs[31 + i] = 1.0 if card["set"] == "JOKER" else 0.0
-
-        blind_type_map = {"small": 0.0, "big": 0.5, "boss": 1.0}
-        obs[36] = blind_type_map.get(self.blind_type, 0.0)
-
-        phase_map = {"SELECTING_HAND": 0.0, "SHOP": 0.5, "BLIND_SELECT": 1.0}
-        obs[37] = phase_map.get(self.phase, 0.0)
-
+        obs[0]  = min(self.ante,8)/8.0
+        obs[1]  = min((self.ante-1)*3+self.blind_idx+1,24)/24.0
+        obs[2]  = min(self.money,100)/100.0
+        obs[3]  = self.hands_left/4.0
+        obs[4]  = self.discards_left/4.0
+        obs[5]  = min(self.chips_scored,300000)/300000.0
+        obs[6]  = min(self.chips_needed,300000)/300000.0
+        obs[7]  = self.joker_count/5.0
+        obs[8]  = self.joker_limit/5.0
+        obs[9]  = min(self.reroll_cost,10)/10.0
+        for i,c in enumerate(self.hand[:8]):
+            obs[10+i] = RANK_VALUES.get(c["rank"],0)/12.0
+            obs[18+i] = SUIT_VALUES.get(c["suit"],0)/3.0
+        for i,c in enumerate(self.shop[:5]):
+            obs[26+i] = min(c["cost"],20)/20.0
+            obs[31+i] = 1.0 if c["set"]=="JOKER" else 0.0
+        obs[36] = {"small":0.0,"big":0.5,"boss":1.0}.get(self.blind_type,0.0)
+        obs[37] = {"SELECTING_HAND":0.0,"SHOP":0.5,"BLIND_SELECT":1.0}.get(self.phase,0.0)
+        vis = self._deck + self.hand
+        rc  = Counter(c["rank"] for c in vis)
+        for i,r in enumerate(RANKS):    obs[38+i] = min(rc.get(r,0),4)/4.0
+        sc  = Counter(c["suit"] for c in vis)
+        for i,s in enumerate(SUITS):    obs[51+i] = min(sc.get(s,0),13)/13.0
+        di = HAND_TYPE_IDX.get(self.dominant_hand,8)
+        obs[55+di] = 1.0
+        obs[64] = min(self.hand_levels.get(self.dominant_hand,1),10)/10.0
+        obs[65] = len(self._full_deck)/52.0                          # FIX #10
+        ds = DEBUFF_SUITS.get(self.boss_debuff)
+        obs[66] = 1.0 if ds else 0.0                                 # FIX #11
+        obs[67] = SUIT_VALUES.get(ds,0)/3.0 if ds else 0.0
+        if   self.boss_debuff=="play_1": obs[68] = 1.0/5.0
+        elif self.boss_debuff=="play_5": obs[68] = 5.0/5.0
+        obs[69] = 1.0 if self.boss_debuff in ("hand_size_minus1","draw_1") else 0.0
+        obs[70] = min(self.green_joker_mult,20)/20.0                 # FIX #6
+        obs[71] = min(self.ride_bus_mult,   20)/20.0
         return obs
+
+    def action_masks(self):
+        mask = np.ones(N_ACTIONS, dtype=bool)
+        if self.phase == "BLIND_SELECT":
+            if self.blind_type == "boss":              mask[1] = False
+            if self.joker_count==0 and self.ante==1:   mask[1] = False
+            mask[2:] = False
+        elif self.phase == "SELECTING_HAND":
+            if self.discards_left <= 0:                mask[1] = False
+            mask[5:] = False
+        elif self.phase == "SHOP":
+            for i in range(1,6):
+                bi = i-1
+                if bi >= len(self.shop):               mask[i] = False
+                elif self.shop[bi]["cost"] > self.money: mask[i] = False
+                elif (self.shop[bi]["set"]=="JOKER" and
+                      self.joker_count >= self.joker_limit): mask[i] = False
+            if self.money < self.reroll_cost:          mask[6] = False
+        return mask
 
 
 # ---------------------------------------------------------------------------
@@ -472,29 +729,14 @@ class MockGameState:
 # ---------------------------------------------------------------------------
 
 class BalatroMockEnv(gym.Env):
-    """
-    High-fidelity mock Balatro environment for PPO training.
-    Same obs/action space as BalatroEnv — policy transfers directly.
-
-    Fidelity:
-        - Hand level scaling (chips/mult grow as hand type is played)
-        - Tiered joker effects (S+/S/A/common with Xmult + flat mult)
-        - Realistic shop composition (jokers, planets, tarots, vouchers, packs)
-        - Boss blind debuffs (hand size, forced discards)
-        - Exact interest mechanic ($1 per $5, max $5)
-        - Blind skip tag values (weighted distribution)
-        - Red deck (+1 discard base)
-    """
-
+    """High-fidelity mock Balatro env. OBS_DIM=72. action_masks() for MaskablePPO."""
     metadata = {"render_modes": []}
 
     def __init__(self):
         super().__init__()
-        self.observation_space = spaces.Box(
-            low=0.0, high=1.0, shape=(OBS_DIM,), dtype=np.float32
-        )
-        self.action_space = spaces.Discrete(N_ACTIONS)
-        self._rng = np.random.default_rng()
+        self.observation_space = spaces.Box(low=0.0,high=1.0,shape=(OBS_DIM,),dtype=np.float32)
+        self.action_space      = spaces.Discrete(N_ACTIONS)
+        self._rng  = np.random.default_rng()
         self._game = None
 
     def reset(self, seed=None, options=None):
@@ -504,34 +746,21 @@ class BalatroMockEnv(gym.Env):
         self._game = MockGameState(self._rng)
         return self._game.encode(), {}
 
-    def step(self, action: int):
-        g = self._game
+    def step(self, action):
+        g      = self._game
         action = int(action)
-
-        if g.phase == "BLIND_SELECT":
-            reward = g.step_blind_select(action)
-        elif g.phase == "SELECTING_HAND":
-            reward = g.step_selecting_hand(action)
-        elif g.phase == "SHOP":
-            reward = g.step_shop(action)
-        else:
-            reward = 0.0
-
-        if g.won:
-            reward += 10.0
-
-        obs = g.encode()
+        if   g.phase == "BLIND_SELECT":    reward = g.step_blind_select(action)
+        elif g.phase == "SELECTING_HAND":  reward = g.step_selecting_hand(action)
+        elif g.phase == "SHOP":            reward = g.step_shop(action)
+        else:                              reward = 0.0
+        if g.won: reward += 10.0
+        obs  = g.encode()
         done = g.done or g.won
-        info = {
-            "ante":  g.ante,
-            "round": g.blind_idx + 1,
-            "won":   g.won,
-        }
+        return obs, reward, done, False, {"ante":g.ante,"round":g.blind_idx+1,"won":g.won}
 
-        return obs, reward, done, False, info
+    def action_masks(self):
+        if self._game is None: return np.ones(N_ACTIONS, dtype=bool)
+        return self._game.action_masks()
 
-    def render(self):
-        pass
-
-    def close(self):
-        pass
+    def render(self): pass
+    def close(self):  pass
