@@ -418,6 +418,7 @@ class BaseBot:
                 break
 
         try:
+            time.sleep(1.0)
             state = self.client.next_round()
         except Exception as e:
             logger.warning(f"next_round failed: {e}")

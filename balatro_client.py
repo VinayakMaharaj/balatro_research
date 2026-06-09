@@ -47,7 +47,7 @@ class BalatroClient:
 
     host: str = "127.0.0.1"
     port: int = 12346
-    timeout: float = 30.0
+    timeout: float = 60.0
     _request_id: int = field(default=0, init=False, repr=False)
 
     @property
