@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 1024
 
-# Cost per 1M tokens (Haiku input+output blended estimate)
+# Cost per 1M tokens (Sonnet blended estimate)
 COST_PER_1M_TOKENS = 5.00
 
 
@@ -72,7 +72,7 @@ class QualitativeLogger:
             "round": round_num,
             "state": state_name,
             "prompt_length": len(prompt),
-            "response": response[:500],  # truncate long responses
+            "response": response[:500],
             "parsed_action": parsed_action,
             "reasoning": parsed_action.get("reasoning", ""),
         }
@@ -81,7 +81,7 @@ class QualitativeLogger:
 
 
 # ---------------------------------------------------------------------------
-# Game state formatter
+# Game state formatters
 # ---------------------------------------------------------------------------
 
 def format_hand(cards: list[dict]) -> str:
@@ -160,6 +160,7 @@ def format_blinds(blinds: dict) -> str:
         lines.append(f"  {blind_key.upper()}: {name} (need {score} chips) [{status}]{effect_str}{tag_str}")
     return "\n".join(lines)
 
+
 def format_pack(state: dict) -> str:
     pack_cards = state.get("pack_cards", {}).get("cards", [])
     choices = state.get("pack_cards", {}).get("choose", 1)
@@ -221,7 +222,8 @@ Respond ONLY in this JSON format:
 
 Rules: play 1-5 cards to score, discard 1-5 to draw new. Beat {chips_needed} total chips.
 Best hands: Flush > Straight > Four of a Kind > Full House > Three of a Kind > Two Pair > Pair
-Discard strategy: if you have no pair or better, discard your 3 weakest cards to fish for a stronger hand. Use discards aggressively early — wasted discards are wasted value."""
+Discard strategy: discard 3-5 weak cards to fish for flush or straight. Use all discards — wasted discards are wasted value.
+If blind effect debuffs a suit, avoid playing cards of that suit."""
 
     elif state_name == "SHOP":
         reroll_cost = round_info.get("reroll_cost", 5)
@@ -237,26 +239,48 @@ Respond ONLY in this JSON format:
 
 Valid actions: buy_card, buy_pack, reroll, end_shop. Always end with end_shop.
 Economy rules:
-- INTEREST: you earn $1 per $5 held at end of shop (max $5 bonus). Holding $20+ is worth $4/round.
-- SPEND FLOOR: only buy if your money after purchase stays >= $6. Never spend down to $0-$5.
-- SKIP REWARD: skipping small or big blind gives a tag (free card/joker). Skip if your hand is strong enough to beat the blind easily.
-- PRIORITY: Jokers > consumables > packs. Only reroll if you have $10+ after reroll cost."""
+- INTEREST: earn $1 per $5 held at end of shop (max $5/round). Holding $25 = max interest.
+- SPEND FLOOR: only buy if money after purchase stays >= $6. Never go below $6.
+- PRIORITY: Jokers > Planet cards (for your main hand type) > consumables > packs.
+- PLANET CARDS: always buy the planet matching your most-played hand type — they compound.
+- Only reroll if you have $10+ after reroll cost and joker slots are open."""
 
     elif state_name == "BLIND_SELECT":
+        joker_count = get_joker_count(state)
         prompt += f"""BLIND SELECTION:
 {format_blinds(blinds)}
 
-JOKERS:
+JOKERS: {joker_count} owned
 {format_jokers(jokers)}
 
 Respond ONLY in this JSON format:
 {{"action": "select" or "skip", "reasoning": "brief"}}
 
-Rules: Boss CANNOT be skipped. 
-SKIP STRATEGY: Only skip if you have 2+ jokers already OR the tag reward is exceptional (free rare joker).
-NEVER skip both small AND big blind with 0 jokers — you will die on the boss blind without economy.
-At ante 1 with no jokers: select small blind, select big blind, build economy first.
-At ante 2+ with 2+ jokers: skipping small blind for a good tag is fine."""
+SKIP RULES — read carefully:
+- Boss blind CANNOT be skipped, always select.
+- With 0 jokers: NEVER skip both small AND big blind. Select at least one to earn money.
+- With 0 jokers at ante 1: select BOTH small and big blind to build economy.
+- With 2+ jokers: skipping small blind for a good tag reward is fine.
+- With 3+ jokers and strong build: skipping both small and big is acceptable.
+- Skipping with no jokers and then dying on boss = worst possible outcome."""
+
+    elif state_name == "SMODS_BOOSTER_OPENED":
+        choices = state.get("pack_cards", {}).get("choose", 1)
+        prompt += f"""BOOSTER PACK OPENED - Must choose {choices} card(s) or skip all:
+{format_pack(state)}
+
+JOKERS:
+{format_jokers(jokers)}
+
+Respond ONLY in this JSON format:
+{{"action": "pick" or "skip", "cards": [indices], "reasoning": "1 sentence max"}}
+
+Pack strategy:
+- Tarot cards: The Devil (glass enhancement = X2 mult) and The Empress (steel = X1.5 mult held) are best.
+- Planet cards: take the planet matching your most-played hand type to level it up.
+- Joker packs: take any joker that synergizes with your current hand type build.
+- Spectral cards: powerful but use carefully — some destroy cards.
+- Skip if nothing is useful. You must list exactly {choices} index/indices if picking."""
 
     return prompt
 
@@ -282,6 +306,8 @@ def parse_llm_response(response_text: str, state_name: str) -> dict:
         return {"actions": [{"action": "end_shop", "reasoning": "fallback"}]}
     elif state_name == "BLIND_SELECT":
         return {"action": "select", "reasoning": "fallback"}
+    elif state_name == "SMODS_BOOSTER_OPENED":
+        return {"action": "skip", "cards": [], "reasoning": "fallback"}
 
     return {}
 
@@ -308,6 +334,7 @@ class LLMBot(BaseBot):
         self.model = model
         self._total_tokens_used = 0
         self._total_llm_calls = 0
+        self._cost_per_1m_tokens = COST_PER_1M_TOKENS
         self._qual_logger = QualitativeLogger("llm_decisions.jsonl")
         self._current_seed = "unknown"
 
@@ -321,7 +348,7 @@ class LLMBot(BaseBot):
         response_text = message.content[0].text
         tokens_used = message.usage.input_tokens + message.usage.output_tokens
         self._total_tokens_used += tokens_used
-        cost = (self._total_tokens_used / 1_000_000) * COST_PER_1M_TOKENS
+        cost = (self._total_tokens_used / 1_000_000) * self._cost_per_1m_tokens
         logger.info(
             f"LLM call #{self._total_llm_calls} | "
             f"tokens={tokens_used} | "
@@ -455,6 +482,36 @@ class LLMBot(BaseBot):
             action = "select"
 
         return action
+
+    def select_pack_action(self, state: dict) -> dict:
+        prompt = format_state_for_llm(state)
+        response = self._call_llm(prompt)
+
+        try:
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                parsed = json.loads(json_match.group())
+            else:
+                parsed = {"action": "skip", "cards": [], "reasoning": "fallback"}
+        except json.JSONDecodeError:
+            parsed = {"action": "skip", "cards": [], "reasoning": "fallback"}
+
+        reasoning = parsed.get("reasoning", "")
+        if reasoning:
+            logger.info(f"LLM pack: {reasoning}")
+
+        self._qual_logger.log(
+            bot_type=self.BOT_TYPE,
+            seed=self._current_seed,
+            ante=get_ante(state),
+            round_num=state.get("round_num", 0),
+            state_name="SMODS_BOOSTER_OPENED",
+            prompt=prompt,
+            response=response,
+            parsed_action=parsed,
+        )
+
+        return parsed
 
 
 # ---------------------------------------------------------------------------

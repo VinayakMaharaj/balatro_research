@@ -1,0 +1,110 @@
+[
+  {
+    "name": "Scoring Formula",
+    "description": "The scoring formula in Balatro is: Score = (Base Chips + Card Chips) x Multiplier. Base Chips and Multiplier come from the poker hand type played. Card Chips come from the rank value of each scoring card. Jokers can add flat Chips, flat Mult, or Xmult (multiplicative multiplier) bonuses on top of this."
+  },
+  {
+    "name": "Poker Hand Rankings",
+    "description": "Poker hands from strongest to weakest: Royal Flush (100 chips, 8 mult), Straight Flush (100 chips, 8 mult), Five of a Kind (120 chips, 12 mult), Flush Five (160 chips, 16 mult), Flush House (140 chips, 14 mult), Four of a Kind (60 chips, 7 mult), Full House (40 chips, 4 mult), Flush (35 chips, 4 mult), Straight (30 chips, 4 mult), Three of a Kind (30 chips, 3 mult), Two Pair (20 chips, 2 mult), Pair (10 chips, 2 mult), High Card (5 chips, 1 mult). A Flush requires 5 cards of the same suit. A Straight requires 5 consecutive ranks."
+  },
+  {
+    "name": "Card Chip Values",
+    "description": "Each card contributes chips based on its rank when scored: 2=2 chips, 3=3, 4=4, 5=5, 6=6, 7=7, 8=8, 9=9, 10=10, Jack=10, Queen=10, King=10, Ace=11. Face cards are Jack, Queen, and King."
+  },
+  {
+    "name": "Game Structure",
+    "description": "A run consists of 8 Antes. Each Ante has 3 blinds: Small Blind, Big Blind, and Boss Blind. To win a run you must defeat all 8 Antes (beat the Ante 8 Boss Blind). The chip requirements to beat each blind increase with each Ante. After beating each blind you enter a Shop phase."
+  },
+  {
+    "name": "Blind Types",
+    "description": "Small Blind: the easiest blind in each Ante, can be skipped for a Tag reward. Big Blind: medium difficulty blind in each Ante, can be skipped for a Tag reward. Boss Blind: the hardest blind in each Ante, has a special negative effect, cannot be skipped. Skipping a Small or Big Blind gives you a Tag bonus but you do not earn money from that blind."
+  },
+  {
+    "name": "Blind Chip Requirements",
+    "description": "Ante 1: Small=300, Big=450, Boss=600. Ante 2: Small=800, Big=1200, Boss=1600. Ante 3: Small=2000, Big=3000, Boss=4000. Ante 4: Small=5000, Big=7500, Boss=10000. Ante 5: Small=11000, Big=16500, Boss=22000. Ante 6: Small=20000, Big=30000, Boss=40000. Ante 7: Small=35000, Big=52500, Boss=70000. Ante 8: Small=60000, Big=90000, Boss=120000."
+  },
+  {
+    "name": "Tags from Skipping Blinds",
+    "description": "When you skip a Small or Big Blind, you receive a Tag. Tags provide one-time bonuses such as: free Jokers, free consumable cards, extra money, discounted shop, extra Joker slots, upgraded poker hands, or other powerful effects. The specific tag offered is shown on the blind selection screen before you decide to skip."
+  },
+  {
+    "name": "Boss Blind Effects",
+    "description": "Boss Blinds have special negative effects that make them harder. Common effects include: debuffing all cards of a specific suit (those cards score 0), reducing hand size by 1, forcing you to play exactly 5 cards, removing all discards, flipping cards face down, or other restrictions. The effect is shown before you select the Boss Blind."
+  },
+  {
+    "name": "Hand and Discard Rules",
+    "description": "Each round you have a limited number of Hands and Discards. Hands: each time you play cards counts as one hand. When hands reach 0 and you have not beaten the blind, you lose. Discards: you can discard 1-5 cards and draw new ones without playing. Discards do not count toward your score. Unused hands at end of round convert to money ($1 each). Unused discards also convert to money on some decks."
+  },
+  {
+    "name": "The Shop",
+    "description": "After each blind you enter a Shop. The Shop contains items for purchase using money earned from playing. Shop items include: Jokers (passive effect cards), Tarot cards (consumable modifiers), Planet cards (consumable hand upgrades), Spectral cards (powerful consumables), Vouchers (permanent run upgrades), and Booster Packs (contain multiple cards to choose from). You can also Reroll the shop to get new items, starting at $5 and increasing by $1 each reroll."
+  },
+  {
+    "name": "Interest Mechanic",
+    "description": "At the end of each round (after cashing out), you earn interest on your money. You earn $1 for every $5 you hold, up to a maximum of $5 interest per round. To earn maximum interest you need to hold at least $25. Holding $25 earns $5 interest per round. Holding $20 earns $4. Holding $15 earns $3. Holding $10 earns $2. Holding $5 earns $1."
+  },
+  {
+    "name": "Jokers",
+    "description": "Jokers are passive effect cards that enhance your scoring. You can hold up to 5 Jokers at once (base limit). Jokers trigger in order from left to right. Each Joker has a unique effect. Jokers come in four rarities: Common, Uncommon, Rare, and Legendary. Rarer Jokers are more powerful but harder to find. Jokers can be sold for money. Some Jokers scale over time, gaining power the longer you hold them."
+  },
+  {
+    "name": "Joker Types",
+    "description": "Joker effects include: adding flat Chips (+chips), adding flat Mult (+mult), multiplying Mult (Xmult), earning money, scaling based on game events, triggering based on hand type played, triggering based on card rank or suit scored, triggering based on cards held in hand, and many other conditional effects. Joker effects stack with each other and with card enhancements."
+  },
+  {
+    "name": "Tarot Cards",
+    "description": "Tarot cards are one-time use consumables. They can: enhance playing cards in your deck (add glass, steel, gold, mult, bonus, or other properties), change card suits or ranks, create other consumables, provide money, destroy cards, or add seals to cards. There are 22 Tarot cards total. You use them from your consumable slots during the Shop or at the start of a round."
+  },
+  {
+    "name": "Planet Cards",
+    "description": "Planet cards are one-time use consumables that permanently level up a specific poker hand type for the rest of the run. Each level increases the base Chips and Mult of that hand. Each planet corresponds to one hand: Mercury=Pair, Venus=Three of a Kind, Earth=Full House, Mars=Four of a Kind, Jupiter=Flush, Saturn=Straight, Uranus=Two Pair, Neptune=Straight Flush, Pluto=High Card. Leveling the same hand multiple times continues to increase its power."
+  },
+  {
+    "name": "Spectral Cards",
+    "description": "Spectral cards are powerful one-time use consumables. Their effects are stronger than Tarot cards but may have drawbacks such as destroying cards or removing money. Spectral cards can: add editions to Jokers, create copies of cards, apply powerful enhancements, add negative Joker slots, or trigger other strong effects. There are 18 Spectral cards. They are usually found in Booster Packs."
+  },
+  {
+    "name": "Booster Packs",
+    "description": "Booster Packs can be purchased in the Shop or found as Tag rewards. Opening a pack lets you choose one or two cards to add to your hand or deck. Pack types include: Arcana Packs (contain Tarot cards), Celestial Packs (contain Planet cards), Spectral Packs (contain Spectral cards), Buffoon Packs (contain Jokers), Standard Packs (contain playing cards). Large versions of each pack offer more cards to choose from."
+  },
+  {
+    "name": "Card Enhancements",
+    "description": "Playing cards can have enhancements that change how they score. Bonus Card: +30 Chips when scored. Mult Card: +4 Mult when scored. Wild Card: counts as any suit. Glass Card: X2 Mult when scored, 1 in 4 chance to be destroyed after scoring. Steel Card: X1.5 Mult while held in hand (not played). Stone Card: +50 Chips when scored, no suit or rank. Gold Card: earn $3 when held in hand at end of round. Lucky Card: 1 in 5 chance for +20 Mult, 1 in 15 chance for +$20 when scored."
+  },
+  {
+    "name": "Card Editions",
+    "description": "Playing cards and Jokers can have editions that add extra effects. Foil: +50 Chips. Holographic: +10 Mult. Polychrome: X1.5 Mult. Negative (Jokers only): adds +1 Joker slot. Only one edition per card."
+  },
+  {
+    "name": "Card Seals",
+    "description": "Playing cards can have seals that trigger special effects. Red Seal: retrigger this card one additional time when scored. Blue Seal: creates a Planet card for the final played poker hand when held in hand at end of round. Gold Seal: earn $3 when this card is held in hand at end of round. Purple Seal: creates a Tarot card when this card is discarded."
+  },
+  {
+    "name": "Starting Decks",
+    "description": "Players choose a starting deck at the beginning of each run. Red Deck: +1 Discard per round. Blue Deck: +1 Hand per round. Yellow Deck: start with $10. Green Deck: earn $2 per unused Hand and $1 per unused Discard at end of round, no interest. Black Deck: +1 Joker slot, -1 Hand per round. Abandoned Deck: start with no face cards (no Jacks, Queens, or Kings). Ghost Deck: Spectral cards can appear in shop, start with a Hex spectral card. Nebula Deck: start with Telescope voucher, -1 consumable slot."
+  },
+  {
+    "name": "Money and Economy",
+    "description": "Money is earned by: beating blinds ($3-5 base plus bonus), selling Jokers and consumables, unused hands at end of round ($1 each), interest on held money, and special Joker effects. Money is spent in the Shop on Jokers, consumables, packs, vouchers, and rerolls. You start each run with $4."
+  },
+  {
+    "name": "Vouchers",
+    "description": "Vouchers are permanent upgrades purchased in the Shop. Each voucher can only be purchased once per run. Vouchers provide effects like: more Joker slots, cheaper shop items, better interest rates, extra consumable slots, or other permanent bonuses. Each voucher has an upgraded version that can be purchased after buying the base version."
+  },
+  {
+    "name": "Discarding Strategy",
+    "description": "You can discard 1-5 cards per discard action, drawing new cards from your deck to replace them. Discarding is useful to find better hands such as Flushes or Straights. When discarding, try to discard as many cards as possible while keeping cards needed for your target hand. Discard the cards least likely to help your target hand. Cards discarded go to the discard pile and eventually reshuffle back into the deck."
+  },
+  {
+    "name": "Consumable Slots",
+    "description": "You can hold up to 2 consumable cards at once (Tarot, Planet, or Spectral cards) by default. Holding a consumable prevents that type of card from appearing in packs, making other types more likely to appear. Consumables are used from the consumable area on the right side of the screen."
+  },
+  {
+    "name": "Hand Levels",
+    "description": "Each poker hand type has a level that increases when you use Planet cards. Level 1 is the base. Each level adds Chips and Mult to that hand type permanently for the run. For example, using Jupiter on Flush multiple times creates a very powerful Flush hand. Hand levels reset at the start of each new run."
+  },
+  {
+    "name": "Selling Cards",
+    "description": "Jokers and consumables can be sold from the sell area during the Shop phase. Selling a Joker returns some money based on its sell value. Common Jokers typically sell for $2-3, Uncommon for $3-4, Rare for $4-5, Legendary for $5. Some Jokers gain sell value over time (like the Egg joker)."
+  }
+]
