@@ -392,6 +392,8 @@ class BaseBot:
             try:
                 if action == "buy_card":
                     state = self.client.buy(card=action_dict["index"])
+                    time.sleep(2.0)
+                    state = self.client.gamestate()
                     metrics["jokers_bought"] += 1
                 elif action == "buy_voucher":
                     state = self.client.buy(voucher=action_dict["index"])
