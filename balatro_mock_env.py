@@ -234,33 +234,28 @@ def _select_play_cards(hand, action, boss_debuff, one_hand_type, must_play_n):
     sc          = Counter(suits)
     debuff_suit = DEBUFF_SUITS.get(boss_debuff)
 
+    # The Mouth constraint
     if one_hand_type == "flush"    and action != 2: action = 2
     elif one_hand_type == "straight" and action != 3: action = 3
 
-    if action == 2:
-        for suit, count in sc.most_common():
-            if suit == debuff_suit: continue
-            fc = [c for c in hand if c["suit"] == suit]
-            if len(fc) >= 5:
-                play = fc[:5]
-                if must_play_n: play = play[:must_play_n]
-                return play, _detect_hand_type(play)
-        bs = sc.most_common(1)[0][0]
-        fc = [c for c in hand if c["suit"] == bs]
+    # Always try flush first (strongest hand, best chips) — prefer non-debuffed suit
+    for suit, count in sc.most_common():
+        if suit == debuff_suit: continue
+        fc = [c for c in hand if c["suit"] == suit]
         if len(fc) >= 5:
             play = fc[:5]
             if must_play_n: play = play[:must_play_n]
-            return play, "flush"
+            return play, _detect_hand_type(play)
 
-    if action == 3:
-        rv = sorted(set(RANK_VALUES[r] for r in ranks))
-        for i in range(len(rv)-4):
-            w = rv[i:i+5]
-            if w[-1]-w[0]==4 and len(w)==5:
-                sr   = {RANK_ORDER[v] for v in w}
-                play = [c for c in hand if c["rank"] in sr][:5]
-                if must_play_n: play = play[:must_play_n]
-                return play, "straight"
+    # Always try straight second
+    rv = sorted(set(RANK_VALUES[r] for r in ranks))
+    for i in range(len(rv)-4):
+        w = rv[i:i+5]
+        if w[-1]-w[0]==4 and len(w)==5:
+            sr   = {RANK_ORDER[v] for v in w}
+            play = [c for c in hand if c["rank"] in sr][:5]
+            if must_play_n: play = play[:must_play_n]
+            return play, "straight"
 
     src = sorted(rc.items(), key=lambda x:(x[1],RANK_VALUES[x[0]]), reverse=True)
     tr, tc = src[0]
@@ -447,6 +442,24 @@ class MockGameState:
         must_play_n = None
         if self.boss_debuff == "play_1":  must_play_n = 1
         elif self.boss_debuff == "play_5": must_play_n = 5
+
+        # Check if a strong hand is available
+        ranks_now = [c["rank"] for c in self.hand]
+        suits_now = [c["suit"] for c in self.hand]
+        sc_now    = Counter(suits_now)
+        rv_now    = sorted(set(RANK_VALUES[r] for r in ranks_now))
+        debuff    = DEBUFF_SUITS.get(self.boss_debuff)
+        has_flush = any(count >= 5 for suit, count in sc_now.items() if suit != debuff)
+        has_straight = (
+            len(rv_now) >= 5 and
+            any(rv_now[i+4]-rv_now[i]==4 for i in range(len(rv_now)-4))
+        )
+        # Force discard if no strong hand and can afford to fish
+        if (not has_flush and not has_straight and
+                self.discards_left > 0 and
+                self.hands_left > 1 and
+                action != 1):
+            action = 1
 
         if action == 1 and self.discards_left > 0:
             self.discards_left    -= 1

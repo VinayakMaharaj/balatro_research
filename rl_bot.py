@@ -268,14 +268,24 @@ def _build_rl_bot(model_path, port, results_path, deck, stake):
             return int(action)
 
         def select_hand_action(self, state):
-            action        = min(self._get_action(state), 4)
+            """
+            Matches Option B training: flush->straight->discard->pairs.
+            Model controls shop/blind — hand selection is deterministic.
+            """
             cards         = get_hand_cards(state)
             discards_left = get_discards_left(state)
-            if action == 1 and discards_left > 0:
+            hands_left    = state.get("round", {}).get("hands_left", 4)
+            flush_idxs    = _find_flush(cards)
+            if flush_idxs:
+                self._last_hand_type = "rl_play"
+                return "play", [int(i) for i in flush_idxs]
+            straight_idxs = _find_straight(cards)
+            if straight_idxs:
+                self._last_hand_type = "rl_play"
+                return "play", [int(i) for i in straight_idxs]
+            if discards_left > 0 and hands_left > 1:
                 return "discard", [int(i) for i in _worst_cards(cards, 3)]
-            if   action == 2: idxs = _find_flush(cards)    or _best_pair_hand(cards)
-            elif action == 3: idxs = _find_straight(cards) or _best_pair_hand(cards)
-            else:             idxs = _best_pair_hand(cards)
+            idxs = _best_pair_hand(cards)
             idxs = [int(i) for i in idxs if 0 <= i < len(cards)]
             if not idxs: idxs = list(range(min(5, len(cards))))
             self._last_hand_type = "rl_play"
