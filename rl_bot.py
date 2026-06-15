@@ -304,7 +304,7 @@ def _build_rl_bot(model_path, port, results_path, deck, stake):
             bi = int(action - 1)
             if bi < len(shop_cards):
                 cost = shop_cards[bi].get("cost", {}).get("buy", 999)
-                if cost <= money:
+                if cost <= money and cost > 0:
                     return [{"action": "buy_card", "index": bi}, {"action": "end_shop"}]
             return [{"action": "end_shop"}]
 

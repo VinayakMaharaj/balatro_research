@@ -304,3 +304,8 @@ timestamp,bot_type,seed,deck,stake,outcome,duration_seconds,final_ante,peak_ante
 2026-06-11 22:00:19,rl_bot,SEED003,RED,WHITE,lost,18.9,1,1,1,4,0,0,4,0,0,"{""rl_play"": 4}",0,0,0.0,
 2026-06-11 22:00:40,rl_bot,SEED004,RED,WHITE,lost,19.6,1,1,1,4,0,0,4,0,0,"{""rl_play"": 4}",0,0,0.0,
 2026-06-11 22:01:01,rl_bot,SEED005,RED,WHITE,lost,19.9,1,1,1,4,0,0,4,0,0,"{""rl_play"": 4}",0,0,0.0,
+2026-06-15 09:09:37,rl_bot,SEED001,RED,WHITE,lost,76.0,2,2,4,11,15,0,20,1,0,"{""rl_play"": 11}",0,0,0.0,
+2026-06-15 09:10:55,rl_bot,SEED002,RED,WHITE,lost,76.9,2,2,4,11,11,0,19,1,0,"{""rl_play"": 11}",0,0,0.0,
+2026-06-15 09:12:13,rl_bot,SEED003,RED,WHITE,lost,37.5,1,1,2,5,8,0,4,1,0,"{""rl_play"": 5}",0,0,0.0,
+2026-06-15 09:12:53,rl_bot,SEED004,RED,WHITE,lost,52.6,1,1,3,7,10,0,6,2,0,"{""rl_play"": 7}",0,0,0.0,
+2026-06-15 09:13:48,rl_bot,SEED005,RED,WHITE,error,127.1,3,3,4,5,15,2,19,3,0,"{""rl_play"": 5}",0,0,0.0,Error: timed out
