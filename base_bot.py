@@ -70,34 +70,13 @@ def get_blind_type(state: dict) -> str:
 # ---------------------------------------------------------------------------
 
 FIELDNAMES = [
-    # Run identification
-    "timestamp",
-    "bot_type",
-    "seed",
-    "deck",
-    "stake",
-    # Outcome
-    "outcome",
-    "duration_seconds",
-    # Progress
-    "final_ante",
-    "peak_ante",
-    "final_round",
-    # Play stats
-    "hands_played",
-    "discards_used",
-    "blinds_skipped",
-    # Economy
-    "final_dollars",
-    "jokers_bought",
-    "rerolls_used",
-    # Hand types played (qualitative)
+    "timestamp", "bot_type", "seed", "deck", "stake",
+    "outcome", "duration_seconds",
+    "final_ante", "peak_ante", "final_round",
+    "hands_played", "discards_used", "blinds_skipped",
+    "final_dollars", "jokers_bought", "rerolls_used",
     "hands_by_type",
-    # LLM-specific (empty for heuristic/RL bots)
-    "llm_calls",
-    "tokens_used",
-    "estimated_cost_usd",
-    # Notes / errors
+    "llm_calls", "tokens_used", "estimated_cost_usd",
     "notes",
 ]
 
@@ -126,10 +105,6 @@ class BaseBot:
         self.launch_wait = launch_wait
         self._ensure_csv()
 
-    # -----------------------------------------------------------------------
-    # Subclass interface
-    # -----------------------------------------------------------------------
-
     def select_hand_action(self, state: dict) -> tuple[str, list[int]]:
         raise NotImplementedError
 
@@ -140,7 +115,6 @@ class BaseBot:
         raise NotImplementedError
 
     def select_pack_action(self, state: dict) -> dict:
-        """Default: skip all packs. Override in LLM bots for reasoning."""
         return {"action": "skip", "cards": []}
 
     # -----------------------------------------------------------------------
@@ -152,26 +126,14 @@ class BaseBot:
         start_time = time.time()
         metrics = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "bot_type": self.BOT_TYPE,
-            "seed": seed,
-            "deck": self.deck,
-            "stake": self.stake,
-            "outcome": "incomplete",
-            "duration_seconds": 0,
-            "final_ante": 0,
-            "peak_ante": 0,
-            "final_round": 0,
-            "hands_played": 0,
-            "discards_used": 0,
-            "blinds_skipped": 0,
-            "final_dollars": 0,
-            "jokers_bought": 0,
-            "rerolls_used": 0,
-            "hands_by_type": "{}",
-            "llm_calls": 0,
-            "tokens_used": 0,
-            "estimated_cost_usd": 0.0,
-            "notes": "",
+            "bot_type": self.BOT_TYPE, "seed": seed,
+            "deck": self.deck, "stake": self.stake,
+            "outcome": "incomplete", "duration_seconds": 0,
+            "final_ante": 0, "peak_ante": 0, "final_round": 0,
+            "hands_played": 0, "discards_used": 0, "blinds_skipped": 0,
+            "final_dollars": 0, "jokers_bought": 0, "rerolls_used": 0,
+            "hands_by_type": "{}", "llm_calls": 0, "tokens_used": 0,
+            "estimated_cost_usd": 0.0, "notes": "",
         }
         hand_type_counts = {}
 
@@ -187,19 +149,14 @@ class BaseBot:
 
             while True:
                 current_state_name = state.get("state", "UNKNOWN")
-
-                # Track peak ante
                 current_ante = get_ante(state)
                 if current_ante > metrics["peak_ante"]:
                     metrics["peak_ante"] = current_ante
 
                 if game_won(state):
-                    metrics["outcome"] = "won"
-                    break
-
+                    metrics["outcome"] = "won"; break
                 if game_over(state):
-                    metrics["outcome"] = "lost"
-                    break
+                    metrics["outcome"] = "lost"; break
 
                 if current_state_name == "SELECTING_HAND":
                     action, cards = self.select_hand_action(state)
@@ -213,7 +170,6 @@ class BaseBot:
                         metrics["discards_used"] += 1
                         state = self.client.discard(cards)
                     else:
-                        logger.warning(f"Unknown hand action: {action}")
                         hand = get_hand_cards(state)
                         metrics["hands_played"] += 1
                         state = self.client.play(list(range(min(5, len(hand)))))
@@ -234,11 +190,11 @@ class BaseBot:
                     state = self._execute_shop_actions(state, metrics)
 
                 elif current_state_name == "SMODS_BOOSTER_OPENED":
+                    # FIX: always skip packs to avoid API hangs
                     state = self._execute_pack_action(state)
 
                 elif current_state_name == "GAME_OVER":
-                    metrics["outcome"] = "lost"
-                    break
+                    metrics["outcome"] = "lost"; break
 
                 else:
                     time.sleep(0.3)
@@ -269,8 +225,7 @@ class BaseBot:
                 metrics["tokens_used"] = self._total_tokens_used
                 cost_per_1m = getattr(self, "_cost_per_1m_tokens", 0.80)
                 metrics["estimated_cost_usd"] = round(
-                    (self._total_tokens_used / 1_000_000) * cost_per_1m, 6
-                )
+                    (self._total_tokens_used / 1_000_000) * cost_per_1m, 6)
 
             metrics["hands_by_type"] = json.dumps(hand_type_counts)
             metrics["duration_seconds"] = round(time.time() - start_time, 1)
@@ -292,12 +247,9 @@ class BaseBot:
                 project="balatro-research",
                 name=f"{self.BOT_TYPE}_{len(seeds)}seeds_x{runs_per_seed}",
                 config={
-                    "bot_type":      self.BOT_TYPE,
-                    "seeds":         seeds,
-                    "runs_per_seed": runs_per_seed,
-                    "total_games":   total,
-                    "deck":          self.deck,
-                    "stake":         self.stake,
+                    "bot_type": self.BOT_TYPE, "seeds": seeds,
+                    "runs_per_seed": runs_per_seed, "total_games": total,
+                    "deck": self.deck, "stake": self.stake,
                 },
                 tags=self.WANDB_TAGS,
             )
@@ -310,10 +262,8 @@ class BaseBot:
                 game_num = run_idx * len(seeds) + seeds.index(seed) + 1
                 logger.info(f"[{game_num}/{total}] seed={seed} run={run_idx+1}/{runs_per_seed}")
 
-                if hasattr(self, "_total_llm_calls"):
-                    self._total_llm_calls = 0
-                if hasattr(self, "_total_tokens_used"):
-                    self._total_tokens_used = 0
+                if hasattr(self, "_total_llm_calls"):   self._total_llm_calls = 0
+                if hasattr(self, "_total_tokens_used"): self._total_tokens_used = 0
 
                 result = self.run_game(seed)
                 all_results.append(result)
@@ -343,45 +293,43 @@ class BaseBot:
         return all_results
 
     # -----------------------------------------------------------------------
-    # Pack execution
+    # Pack execution — always skip
     # -----------------------------------------------------------------------
 
     def _execute_pack_action(self, state: dict) -> dict:
         pack_decision = self.select_pack_action(state)
         action = pack_decision.get("action", "skip")
-        cards = pack_decision.get("cards", [])
+        cards  = pack_decision.get("cards", [])
         pack_cards = state.get("pack_cards", {}).get("cards", [])
-        choices = state.get("pack_cards", {}).get("choose", 1)
+        choices    = state.get("pack_cards", {}).get("choose", 1)
 
         if action == "pick" and cards:
             picked = 0
             for card_idx in cards[:choices]:
                 if 0 <= int(card_idx) < len(pack_cards):
                     try:
-                        state = self.client.pack(card=int(card_idx))
+                        state  = self.client.pack(card=int(card_idx))
                         picked += 1
                     except BalatroError as e:
                         logger.warning(f"Pack pick {card_idx} failed: {e.name}")
-            # Skip remaining slots
             for _ in range(choices - picked):
                 try:
                     state = self.client.pack(skip=True)
                 except BalatroError:
-                    state = self.client.gamestate()
-                    break
+                    state = self.client.gamestate(); break
         else:
-            # Skip all choices
             for _ in range(choices):
                 try:
                     state = self.client.pack(skip=True)
                 except BalatroError:
-                    state = self.client.gamestate()
-                    break
+                    state = self.client.gamestate(); break
 
         return state
 
     # -----------------------------------------------------------------------
     # Shop execution
+    # FIX: use planet/tarot consumables immediately after buying
+    # FIX: never buy packs (causes SMODS_BOOSTER_OPENED hangs)
     # -----------------------------------------------------------------------
 
     def _execute_shop_actions(self, state: dict, metrics: dict) -> dict:
@@ -395,21 +343,39 @@ class BaseBot:
                     time.sleep(2.0)
                     state = self.client.gamestate()
                     metrics["jokers_bought"] += 1
+                    # FIX: use planet/tarot consumables immediately
+                    consumables = state.get("consumables", {}).get("cards", [])
+                    for i, cons in enumerate(consumables):
+                        if cons.get("set") in ("PLANET", "TAROT"):
+                            try:
+                                state = self.client.use(consumable=i)
+                                time.sleep(1.0)
+                                state = self.client.gamestate()
+                                logger.info(f"Used {cons.get('label','?')} from slot {i}")
+                            except Exception as ce:
+                                logger.warning(f"Could not use consumable {i}: {ce}")
+
                 elif action == "buy_voucher":
                     state = self.client.buy(voucher=action_dict["index"])
+
                 elif action == "buy_pack":
-                    state = self.client.buy(pack=action_dict["index"])
-                    state = self._execute_pack_action(state)
+                    # FIX: never buy packs — causes SMODS_BOOSTER_OPENED hangs
+                    logger.info("Skipping pack purchase to avoid API hang")
+
                 elif action == "reroll":
                     state = self.client.reroll()
                     metrics["rerolls_used"] += 1
+
                 elif action == "sell_joker":
                     state = self.client.sell(joker=action_dict["index"])
+
                 elif action == "end_shop":
                     state = self.client.next_round()
                     return state
+
                 else:
                     logger.warning(f"Unknown shop action: {action}")
+
             except BalatroError as e:
                 logger.warning(f"Shop action {action} failed: {e.name} - {e.message}")
                 try:
@@ -449,22 +415,22 @@ class BaseBot:
             import wandb
             if wandb.run is not None:
                 wandb.log({
-                    "final_ante":          metrics.get("final_ante", 0),
-                    "peak_ante":           metrics.get("peak_ante", 0),
-                    "final_round":         metrics.get("final_round", 0),
-                    "hands_played":        metrics.get("hands_played", 0),
-                    "discards_used":       metrics.get("discards_used", 0),
-                    "final_dollars":       metrics.get("final_dollars", 0),
-                    "jokers_bought":       metrics.get("jokers_bought", 0),
-                    "blinds_skipped":      metrics.get("blinds_skipped", 0),
-                    "rerolls_used":        metrics.get("rerolls_used", 0),
-                    "llm_calls":           metrics.get("llm_calls", 0),
-                    "tokens_used":         metrics.get("tokens_used", 0),
-                    "estimated_cost_usd":  metrics.get("estimated_cost_usd", 0.0),
-                    "duration_seconds":    metrics.get("duration_seconds", 0),
-                    "outcome":             1 if metrics.get("outcome") == "won" else 0,
-                    "seed":                metrics.get("seed", ""),
-                    "bot_type":            metrics.get("bot_type", ""),
+                    "final_ante":         metrics.get("final_ante", 0),
+                    "peak_ante":          metrics.get("peak_ante", 0),
+                    "final_round":        metrics.get("final_round", 0),
+                    "hands_played":       metrics.get("hands_played", 0),
+                    "discards_used":      metrics.get("discards_used", 0),
+                    "final_dollars":      metrics.get("final_dollars", 0),
+                    "jokers_bought":      metrics.get("jokers_bought", 0),
+                    "blinds_skipped":     metrics.get("blinds_skipped", 0),
+                    "rerolls_used":       metrics.get("rerolls_used", 0),
+                    "llm_calls":          metrics.get("llm_calls", 0),
+                    "tokens_used":        metrics.get("tokens_used", 0),
+                    "estimated_cost_usd": metrics.get("estimated_cost_usd", 0.0),
+                    "duration_seconds":   metrics.get("duration_seconds", 0),
+                    "outcome":            1 if metrics.get("outcome") == "won" else 0,
+                    "seed":               metrics.get("seed", ""),
+                    "bot_type":           metrics.get("bot_type", ""),
                 })
         except ImportError:
             pass
