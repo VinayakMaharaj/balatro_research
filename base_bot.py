@@ -117,6 +117,13 @@ class BaseBot:
     def select_pack_action(self, state: dict) -> dict:
         return {"action": "skip", "cards": []}
 
+    # Diagnostic hooks — override in subclasses to track per-game data
+    def _on_game_start(self, seed: str) -> None:
+        pass
+
+    def _on_game_end(self, seed: str, outcome: str, state: dict) -> None:
+        pass
+
     # -----------------------------------------------------------------------
     # Game loop
     # -----------------------------------------------------------------------
@@ -136,6 +143,7 @@ class BaseBot:
             "estimated_cost_usd": 0.0, "notes": "",
         }
         hand_type_counts = {}
+        final_state = {}
 
         try:
             try:
@@ -147,6 +155,9 @@ class BaseBot:
             state = self.client.start(deck=self.deck, stake=self.stake, seed=seed)
             logger.info(f"Started seed={seed}")
 
+            # Diagnostic hook — notify subclass game has started
+            self._on_game_start(seed)
+
             while True:
                 current_state_name = state.get("state", "UNKNOWN")
                 current_ante = get_ante(state)
@@ -154,9 +165,13 @@ class BaseBot:
                     metrics["peak_ante"] = current_ante
 
                 if game_won(state):
-                    metrics["outcome"] = "won"; break
+                    metrics["outcome"] = "won"
+                    final_state = state
+                    break
                 if game_over(state):
-                    metrics["outcome"] = "lost"; break
+                    metrics["outcome"] = "lost"
+                    final_state = state
+                    break
 
                 if current_state_name == "SELECTING_HAND":
                     action, cards = self.select_hand_action(state)
@@ -190,11 +205,12 @@ class BaseBot:
                     state = self._execute_shop_actions(state, metrics)
 
                 elif current_state_name == "SMODS_BOOSTER_OPENED":
-                    # FIX: always skip packs to avoid API hangs
                     state = self._execute_pack_action(state)
 
                 elif current_state_name == "GAME_OVER":
-                    metrics["outcome"] = "lost"; break
+                    metrics["outcome"] = "lost"
+                    final_state = state
+                    break
 
                 else:
                     time.sleep(0.3)
@@ -226,6 +242,9 @@ class BaseBot:
                 cost_per_1m = getattr(self, "_cost_per_1m_tokens", 0.80)
                 metrics["estimated_cost_usd"] = round(
                     (self._total_tokens_used / 1_000_000) * cost_per_1m, 6)
+
+            # Diagnostic hook — notify subclass game has ended
+            self._on_game_end(seed, metrics["outcome"], final_state)
 
             metrics["hands_by_type"] = json.dumps(hand_type_counts)
             metrics["duration_seconds"] = round(time.time() - start_time, 1)
@@ -297,13 +316,11 @@ class BaseBot:
     # -----------------------------------------------------------------------
 
     def _execute_pack_action(self, state: dict) -> dict:
-        pack_cards = state.get("pack_cards", {}).get("cards", [])
-        choices    = state.get("pack_cards", {}).get("choose", 1)
+        choices = state.get("pack_cards", {}).get("choose", 1)
 
         # FIX: choices can be 0 for tag reward packs — always try at least once
         choices = max(choices, 1)
 
-        # Always skip — never pick from packs (causes hangs)
         for _ in range(choices):
             try:
                 state = self.client.pack(skip=True)
@@ -311,7 +328,6 @@ class BaseBot:
                 state = self.client.gamestate()
                 break
             except Exception:
-                # Catch timeouts and other errors — fall back to gamestate
                 try:
                     state = self.client.gamestate()
                 except Exception:
