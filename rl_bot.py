@@ -312,7 +312,9 @@ def _build_rl_bot(model_path, port, results_path, deck, stake):
             action     = min(self._get_action(state), 1)
             blind_type = get_blind_type(state)
             ante       = state.get("ante_num", 1)
-            if ante <= 1: return "select"
+            # Never skip at ante 1-2 — tag reward packs cause freezes
+            # Only allow skipping at ante 3+ where economy is stronger
+            if ante <= 2: return "select"
             if action == 1 and blind_type != "boss": return "skip"
             return "select"
 

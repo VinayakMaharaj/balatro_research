@@ -297,32 +297,26 @@ class BaseBot:
     # -----------------------------------------------------------------------
 
     def _execute_pack_action(self, state: dict) -> dict:
-        pack_decision = self.select_pack_action(state)
-        action = pack_decision.get("action", "skip")
-        cards  = pack_decision.get("cards", [])
         pack_cards = state.get("pack_cards", {}).get("cards", [])
         choices    = state.get("pack_cards", {}).get("choose", 1)
 
-        if action == "pick" and cards:
-            picked = 0
-            for card_idx in cards[:choices]:
-                if 0 <= int(card_idx) < len(pack_cards):
-                    try:
-                        state  = self.client.pack(card=int(card_idx))
-                        picked += 1
-                    except BalatroError as e:
-                        logger.warning(f"Pack pick {card_idx} failed: {e.name}")
-            for _ in range(choices - picked):
+        # FIX: choices can be 0 for tag reward packs — always try at least once
+        choices = max(choices, 1)
+
+        # Always skip — never pick from packs (causes hangs)
+        for _ in range(choices):
+            try:
+                state = self.client.pack(skip=True)
+            except BalatroError:
+                state = self.client.gamestate()
+                break
+            except Exception:
+                # Catch timeouts and other errors — fall back to gamestate
                 try:
-                    state = self.client.pack(skip=True)
-                except BalatroError:
-                    state = self.client.gamestate(); break
-        else:
-            for _ in range(choices):
-                try:
-                    state = self.client.pack(skip=True)
-                except BalatroError:
-                    state = self.client.gamestate(); break
+                    state = self.client.gamestate()
+                except Exception:
+                    pass
+                break
 
         return state
 
