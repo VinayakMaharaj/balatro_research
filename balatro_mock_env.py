@@ -455,9 +455,13 @@ class MockGameState:
             any(rv_now[i+4]-rv_now[i]==4 for i in range(len(rv_now)-4))
         )
         # Force discard if no strong hand and can afford to fish
+        # Conserve last discard for boss blind
+        is_boss = self.blind_type == "boss"
+        safe_to_discard = self.discards_left > 1 or is_boss
         if (not has_flush and not has_straight and
                 self.discards_left > 0 and
                 self.hands_left > 1 and
+                safe_to_discard and
                 action != 1):
             action = 1
 
@@ -521,8 +525,12 @@ class MockGameState:
             reward += 5.0 + 1.0 * self.ante
             self._end_blind()
         elif self.hands_left <= 0:
-            # Flat harsh penalty — dying always bad regardless of ante
-            reward -= 8.0
+            # Base death penalty
+            penalty = 8.0
+            # Extra penalty for dying on boss blind
+            if self.blind_type == "boss":
+                penalty += 3.0
+            reward -= penalty
             self.done = True
 
         return reward

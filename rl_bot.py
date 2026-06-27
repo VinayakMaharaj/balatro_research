@@ -40,14 +40,14 @@ RUNS_PER_SEED    = 1
 
 # Curriculum schedule: (min_steps, max_ante)
 CURRICULUM = [
-    (0,          1),
-    (25_000_000, 2),
-    (50_000_000, 3),
-    (100_000_000,4),
-    (200_000_000,5),
-    (300_000_000,6),
-    (400_000_000,7),
-    (500_000_000,8),
+    (0,          1),   # 0-40M: master ante 1 including boss blind
+    (40_000_000, 2),   # 40-60M: add ante 2
+    (60_000_000, 3),   # 60-80M: add ante 3
+    (80_000_000, 4),
+    (100_000_000,5),
+    (120_000_000,6),
+    (140_000_000,7),
+    (160_000_000,8),
 ]
 
 
@@ -304,7 +304,7 @@ def _build_rl_bot(model_path, port, results_path, deck, stake):
             bi = int(action - 1)
             if bi < len(shop_cards):
                 cost = shop_cards[bi].get("cost", {}).get("buy", 999)
-                if cost <= money and cost > 0:
+                if cost <= money and cost > 0:  # skip $0 Negative jokers — cause API hangs
                     return [{"action": "buy_card", "index": bi}, {"action": "end_shop"}]
             return [{"action": "end_shop"}]
 
