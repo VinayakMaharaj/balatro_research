@@ -92,10 +92,6 @@
     "description": "Vouchers are permanent upgrades purchased in the Shop. Each voucher can only be purchased once per run. Vouchers provide effects like: more Joker slots, cheaper shop items, better interest rates, extra consumable slots, or other permanent bonuses. Each voucher has an upgraded version that can be purchased after buying the base version."
   },
   {
-    "name": "Discarding Strategy",
-    "description": "You can discard 1-5 cards per discard action, drawing new cards from your deck to replace them. Discarding is useful to find better hands such as Flushes or Straights. When discarding, try to discard as many cards as possible while keeping cards needed for your target hand. Discard the cards least likely to help your target hand. Cards discarded go to the discard pile and eventually reshuffle back into the deck."
-  },
-  {
     "name": "Consumable Slots",
     "description": "You can hold up to 2 consumable cards at once (Tarot, Planet, or Spectral cards) by default. Holding a consumable prevents that type of card from appearing in packs, making other types more likely to appear. Consumables are used from the consumable area on the right side of the screen."
   },
