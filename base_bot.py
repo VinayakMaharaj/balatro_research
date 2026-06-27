@@ -350,8 +350,17 @@ class BaseBot:
             try:
                 if action == "buy_card":
                     state = self.client.buy(card=action_dict["index"])
-                    time.sleep(2.0)
-                    state = self.client.gamestate()
+                    # Poll until back in a stable state
+                    for _ in range(20):
+                        time.sleep(0.5)
+                        try:
+                            state = self.client.gamestate()
+                            s = state.get("state", "")
+                            if s in ("SHOP", "SELECTING_HAND", "BLIND_SELECT", 
+                                    "ROUND_EVAL", "GAME_OVER", "SMODS_BOOSTER_OPENED"):
+                                break
+                        except Exception:
+                            continue
                     metrics["jokers_bought"] += 1
                     # FIX: use planet/tarot consumables immediately
                     consumables = state.get("consumables", {}).get("cards", [])
