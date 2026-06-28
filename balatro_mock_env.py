@@ -810,6 +810,10 @@ class MockGameState:
             # Extra penalty if discards were wasted on non-boss
             if self.discards_left == 0 and not is_boss:
                 penalty += 1.0
+            # Penalty for dying with unspent money — hoarding cash is wrong early game
+            # Each $5 above $5 that wasn't spent = missed joker opportunity
+            if self.money > 5 and self.joker_count == 0:
+                penalty += min((self.money - 5) / 5.0, 4.0)
             reward -= penalty
             self.done = True
 
@@ -819,6 +823,15 @@ class MockGameState:
         reward = 0.0
 
         if action == 0:
+            # Penalty for leaving shop empty-handed when affordable jokers exist
+            # and we have no jokers — this is the core failure mode
+            if self.joker_count == 0 and self.ante <= 2:
+                affordable_jokers = [
+                    item for item in self.shop
+                    if item["set"] == "JOKER" and item["cost"] <= self.money
+                ]
+                if affordable_jokers:
+                    reward -= 1.5  # strong signal: don't leave without a joker early
             self._advance_blind()
             return reward
 
@@ -850,7 +863,19 @@ class MockGameState:
                             "sell_cost": max(1, cost//2),
                         })
                     synergy = _compute_joker_synergy(self.joker_slots, self.dominant_hand)
-                    reward += 1.0 * self.ante * (0.3 + 0.7*synergy)
+                    # Early game joker reward reflects actual scoring uplift:
+                    # A joker at ante 1 roughly doubles scoring potential
+                    # Reward must exceed the opportunity cost of holding cash for interest
+                    # Analysis: buying joker at ante 1 = ~1.5 extra progress reward
+                    # So joker reward must be > 1.5 to make buying worthwhile
+                    if self.ante <= 2:
+                        # Strong reward early — jokers are critical for ante 1-2 survival
+                        ante_mult = 3.0
+                    elif self.ante <= 4:
+                        ante_mult = 1.5
+                    else:
+                        ante_mult = 1.0
+                    reward += ante_mult * self.ante * (0.5 + 0.5*synergy)
 
                 elif ctype == "PLANET":
                     # Level up the specific hand this planet boosts
