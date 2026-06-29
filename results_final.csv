@@ -1,0 +1,4 @@
+timestamp,bot_type,seed,deck,stake,outcome,duration_seconds,final_ante,peak_ante,final_round,hands_played,discards_used,blinds_skipped,final_dollars,jokers_bought,rerolls_used,hands_by_type,llm_calls,tokens_used,estimated_cost_usd,notes
+2026-06-29 17:14:13,flush_bot,SEED001,RED,WHITE,lost,53.4,1,1,3,9,0,0,14,0,0,"{""two_pair"": 3, ""straight"": 3, ""pair"": 2, ""full_house"": 1}",0,0,0.0,
+2026-06-29 17:15:09,flush_bot,SEED002,RED,WHITE,lost,22.4,1,1,1,4,0,0,4,0,0,"{""two_pair"": 2, ""pair"": 2}",0,0,0.0,
+2026-06-29 17:15:33,flush_bot,SEED003,RED,WHITE,lost,42.0,1,1,2,8,0,0,7,0,0,"{""pair"": 3, ""two_pair"": 3, ""three_of_a_kind"": 1, ""straight"": 1}",0,0,0.0,
