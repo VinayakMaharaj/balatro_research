@@ -130,7 +130,7 @@ class BaseBot:
                         hand = get_hand_cards(state)
                         metrics["hands_played"] += 1
                         state = self.client.play(list(range(min(5,len(hand)))))
-                elif current_state_name == "BLIND_SELECT":
+                elif sname == "BLIND_SELECT":
                     decision   = self.select_blind_action(state)
                     blind_type = get_blind_type(state)
                     if decision == "skip" and blind_type != "boss":

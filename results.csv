@@ -945,3 +945,13 @@ timestamp,bot_type,seed,deck,stake,outcome,duration_seconds,final_ante,peak_ante
 2026-06-29 11:47:57,llm_bot,SEED003,RED,WHITE,error,336.4,3,3,6,16,10,2,19,6,0,"{""play"": 16}",41,22455,0.202095,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
 2026-06-29 11:53:35,llm_bot,SEED004,RED,WHITE,lost,238.5,2,2,4,12,8,0,11,2,0,"{""play"": 12}",28,15543,0.139887,
 2026-06-29 11:57:36,llm_bot,SEED005,RED,WHITE,lost,249.9,2,2,5,12,11,1,22,2,0,"{""play"": 12}",34,18090,0.16281,
+2026-06-29 15:58:17,rag_llm_bot,SEED001,RED,WHITE,error,7.2,1,1,0,0,0,0,4,0,0,{},0,0,0.0,Error: name 'current_state_name' is not defined
+2026-06-29 15:58:26,rag_llm_bot,SEED002,RED,WHITE,error,7.2,1,1,0,0,0,0,4,0,0,{},0,0,0.0,Error: name 'current_state_name' is not defined
+2026-06-29 15:58:35,rag_llm_bot,SEED003,RED,WHITE,error,7.2,1,1,0,0,0,0,4,0,0,{},0,0,0.0,Error: name 'current_state_name' is not defined
+2026-06-29 15:58:45,rag_llm_bot,SEED004,RED,WHITE,error,7.2,1,1,0,0,0,0,4,0,0,{},0,0,0.0,Error: name 'current_state_name' is not defined
+2026-06-29 15:58:54,rag_llm_bot,SEED005,RED,WHITE,error,7.3,1,1,0,0,0,0,4,0,0,{},0,0,0.0,Error: name 'current_state_name' is not defined
+2026-06-29 16:00:36,rag_llm_bot,SEED001,RED,WHITE,lost,232.1,2,2,3,9,10,3,30,1,0,"{""play"": 9}",27,32768,0.294912,
+2026-06-29 16:04:30,rag_llm_bot,SEED002,RED,WHITE,error,64.1,1,1,1,1,4,1,5,1,0,"{""play"": 1}",9,9832,0.088488,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-06-29 16:05:36,rag_llm_bot,SEED003,RED,WHITE,lost,175.6,1,1,2,6,6,1,9,0,0,"{""play"": 6}",16,21247,0.191223,
+2026-06-29 16:08:34,rag_llm_bot,SEED004,RED,WHITE,lost,262.7,2,2,3,9,8,3,11,2,0,"{""play"": 9}",25,32346,0.291114,
+2026-06-29 16:12:58,rag_llm_bot,SEED005,RED,WHITE,lost,289.7,2,2,3,9,9,3,5,3,0,"{""play"": 9}",26,34300,0.3087,
