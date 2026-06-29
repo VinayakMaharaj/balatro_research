@@ -452,7 +452,8 @@ class MetaBot(BaseBot):
                 cost_raw = card.get("cost",{})
                 cost     = cost_raw.get("buy",999) if isinstance(cost_raw,dict) else 999
 
-                if card_set not in ("JOKER","Joker"): continue`n                if "pack" in card_set.lower() or "booster" in card_set.lower(): continue
+                if card_set not in ("JOKER","Joker"): continue
+                if "pack" in card_set.lower() or "booster" in card_set.lower(): continue
                 budget = money if emergency_buy else spendable
                 if cost > budget or cost <= 0: continue
 
