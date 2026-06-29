@@ -722,76 +722,103 @@ def _build_rl_bot(model_path, port, results_path, deck, stake):
             return "play", [int(i) for i in best_idxs]
 
         def select_shop_action(self, state):
-            action     = min(self._get_action(state), 6)
-            money      = get_money(state)
-            shop_cards = get_shop_cards(state)
-            rc         = state.get("round",{}).get("reroll_cost",5)
-            ante       = state.get("ante_num",1)
+            """
+            Rule-based shop policy from MetaBot.
+            RL shop policy failed to converge due to mock env reward signal issues
+            (agent learned to hoard cash rather than spend on jokers).
+            Using MetaBot's proven economy heuristic isolates the RL contribution
+            to hand selection and blind decisions only — enabling a clean ablation
+            vs MetaBot (rule-based everything) vs RLBot (learned hand selection,
+            rule-based shop).
+            """
+            from heuristic_bots import joker_score, PLANET_HAND_MAP as _PLANET_MAP
+
+            actions     = []
+            money       = get_money(state)
             joker_count = len(get_jokers(state))
+            joker_limit = state.get("jokers",{}).get("limit",5) if isinstance(state.get("jokers"),dict) else 5
+            shop_cards  = get_shop_cards(state)
+            ante        = state.get("ante_num",1)
 
-            logger.info(
-                f"SHOP: ante={ante} money={money} jokers={joker_count} action={action} "
-                f"cards={[(c.get('label','?'),c.get('cost',{}).get('buy','?'),c.get('set','?')) for c in shop_cards]}"
-            )
+            logger.info(f"SHOP (MetaBot policy): ante={ante} money={money} jokers={joker_count}")
 
-            bought = rerolled = False
+            # Interest floor — keep enough for max interest
+            interest_floor = 20 if ante <= 2 else 25
+            spendable      = max(0, money - interest_floor)
+            emergency_buy  = joker_count == 0  # always buy if no jokers regardless of floor
 
-            # --- FIX: Deterministic joker buying at ante 1-2 when no jokers ---
-            # Mock env failed to learn this — hardcode it
-            # Without a joker, scoring is mathematically insufficient at ante 1+ boss
-            if joker_count == 0 and ante <= 2:
+            bought = False
+
+            # Priority 1: Planet card for dominant hand
+            for i, card in enumerate(shop_cards):
+                card_set = card.get("set","") or card.get("ability",{}).get("set","")
+                label    = card.get("label","")
+                cost_raw = card.get("cost",{})
+                cost     = cost_raw.get("buy",999) if isinstance(cost_raw,dict) else 999
+                if card_set not in ("PLANET","Planet"): continue
+                target_hand = _PLANET_MAP.get(label,"")
+                if target_hand != self._dominant: continue
+                if cost > (money if emergency_buy else max(spendable, money-5)): continue
+                logger.info(f"RLBot buying planet {label} for {self._dominant}")
+                actions.append({"action":"buy_card","index":i})
+                self._hand_levels[target_hand] = self._hand_levels.get(target_hand,1) + 1
+                money -= cost
+                spendable = max(0, money - interest_floor)
+                bought = True
+                self._diag.log_shop(0, money, shop_cards, True, False, ante)
+                break
+
+            # Priority 2: Best joker if slots open
+            if joker_count < joker_limit and (spendable > 0 or emergency_buy):
+                best_idx   = None
+                best_score = -1
+                min_score  = 5 if emergency_buy else (15 if joker_count == 0 else 40)
+
+                for i, card in enumerate(shop_cards):
+                    label    = card.get("label","")
+                    card_set = card.get("set","") or card.get("ability",{}).get("set","")
+                    cost_raw = card.get("cost",{})
+                    cost     = cost_raw.get("buy",999) if isinstance(cost_raw,dict) else 999
+                    if card_set not in ("JOKER","Joker"): continue
+                    if "pack" in card_set.lower() or "booster" in card_set.lower(): continue
+                    budget = money if emergency_buy else spendable
+                    if cost > budget or cost <= 0: continue
+                    score = joker_score(label, self._dominant)
+                    if score >= min_score and score > best_score:
+                        best_score = score
+                        best_idx   = i
+
+                if best_idx is not None:
+                    cost_raw = shop_cards[best_idx].get("cost",{})
+                    cost     = cost_raw.get("buy",0) if isinstance(cost_raw,dict) else 0
+                    logger.info(f"RLBot buying joker {shop_cards[best_idx].get('label','')} score={best_score}")
+                    actions.append({"action":"buy_card","index":best_idx})
+                    money -= cost
+                    spendable = max(0, money - interest_floor)
+                    self._diag.log_shop(0, money, shop_cards, True, False, ante)
+
+            # Priority 3: Any planet card if nothing bought yet
+            if not bought:
                 for i, card in enumerate(shop_cards):
                     card_set = card.get("set","") or card.get("ability",{}).get("set","")
                     cost_raw = card.get("cost",{})
                     cost     = cost_raw.get("buy",999) if isinstance(cost_raw,dict) else 999
-                    if card_set in ("JOKER","Joker") and cost <= money and cost > 0:
-                        logger.info(f"SHOP override: buying joker {card.get('label','?')} at ante {ante} (no jokers held)")
-                        self._diag.log_shop(action, money, shop_cards, True, False, ante)
-                        return [{"action":"buy_card","index":i},{"action":"end_shop"}]
+                    if card_set not in ("PLANET","Planet"): continue
+                    if cost > spendable: continue
+                    label = card.get("label","")
+                    ht    = _PLANET_MAP.get(label, self._dominant)
+                    logger.info(f"RLBot buying off-hand planet {label}")
+                    actions.append({"action":"buy_card","index":i})
+                    self._hand_levels[ht] = self._hand_levels.get(ht,1) + 1
+                    money -= cost
+                    self._diag.log_shop(0, money, shop_cards, True, False, ante)
+                    break
 
-            # --- Deterministic: always buy planet card for dominant hand ---
-            for i, card in enumerate(shop_cards):
-                card_set = card.get("set","") or card.get("ability",{}).get("set","")
-                cost_raw = card.get("cost",{})
-                cost     = cost_raw.get("buy",999) if isinstance(cost_raw,dict) else 999
-                label    = card.get("label","")
-                if card_set in ("PLANET","Planet") and cost <= money:
-                    ht = PLANET_HAND_MAP.get(label,"")
-                    if ht == self._dominant:
-                        self._hand_levels[ht] = self._hand_levels.get(ht,1) + 1
-                        self._diag.log_shop(action, money, shop_cards, True, False, ante)
-                        return [{"action":"buy_card","index":i},{"action":"end_shop"}]
+            if not actions:
+                self._diag.log_shop(0, money, shop_cards, False, False, ante)
 
-            # --- RL model controls remaining shop decisions ---
-            money_mod5   = money % 5
-            near_bracket = money_mod5 >= 4
-
-            if action == 0:
-                result = [{"action":"end_shop"}]
-            elif action == 6:
-                if money >= rc and not near_bracket:
-                    rerolled = True
-                    result   = [{"action":"reroll"},{"action":"end_shop"}]
-                else:
-                    result = [{"action":"end_shop"}]
-            else:
-                bi     = int(action-1)
-                result = [{"action":"end_shop"}]
-                if bi < len(shop_cards):
-                    card     = shop_cards[bi]
-                    card_set = card.get("set","") or card.get("ability",{}).get("set","")
-                    cost_raw = card.get("cost",{})
-                    cost     = cost_raw.get("buy",999) if isinstance(cost_raw,dict) else 999
-                    if cost <= money and cost > 0 and card_set not in ("PACK","Booster"):
-                        bought = True
-                        if card_set in ("PLANET","Planet"):
-                            label = card.get("label","")
-                            ht    = PLANET_HAND_MAP.get(label, self._dominant)
-                            self._hand_levels[ht] = self._hand_levels.get(ht,1) + 1
-                        result = [{"action":"buy_card","index":bi},{"action":"end_shop"}]
-
-            self._diag.log_shop(action, money, shop_cards, bought, rerolled, ante)
-            return result
+            actions.append({"action":"end_shop"})
+            return actions
 
         def select_blind_action(self, state):
             action     = min(self._get_action(state), 1)
