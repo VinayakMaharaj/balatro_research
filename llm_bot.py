@@ -290,6 +290,8 @@ def validate_hand_action(action, cards, hand, discards_left):
     cards = [c for c in cards if isinstance(c,int) and 0<=c<len(hand)]
     if action == "play":
         cards = cards[:5]  # game only allows playing 1-5 cards
+    if action == "discard":
+        cards = cards[:5]  # game only allows discarding 1-5 cards
     if not cards: cards = list(range(min(5,len(hand))))
     if action == "discard" and discards_left <= 0: action = "play"
     if not cards: action = "play"; cards = list(range(min(5,len(hand))))
