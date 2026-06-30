@@ -105,7 +105,22 @@ def build_index(pinecone_api_key: str) -> None:
         return
 
     logger.info(f"Connecting to Pinecone index: {PINECONE_INDEX}")
-    pc    = Pinecone(api_key=pinecone_api_key)
+    pc = Pinecone(api_key=pinecone_api_key)
+
+    existing = [idx["name"] for idx in pc.list_indexes()]
+    if PINECONE_INDEX not in existing:
+        from pinecone import ServerlessSpec
+        logger.info(f"Index '{PINECONE_INDEX}' not found, creating it...")
+        pc.create_index(
+            name=PINECONE_INDEX,
+            dimension=384,  # all-MiniLM-L6-v2 output dimension
+            metric="cosine",
+            spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+        )
+        import time as _time
+        logger.info("Waiting for index to be ready...")
+        _time.sleep(10)
+
     index = pc.Index(PINECONE_INDEX)
 
     logger.info("Clearing existing vectors...")
