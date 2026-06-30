@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Core Scoring Formula",
+    "description": "Balatro scoring is: Score = (Base Chips + Card Chips) x Multiplier. Base Chips and Multiplier come from the poker hand type. Card Chips come from the rank value of each scoring card (2=2, 3=3, ..., T/J/Q/K=10, A=11). Flat Mult adds to the multiplier. xMult multiplies the entire current multiplier. xMult is exponential — stacking multiple xMult Jokers compounds. A hand scoring 20 chips x 5 mult = 100. The same hand with an additional x3 Joker scores 20 x 5 x 3 = 300. Always prioritize xMult Jokers over flat Mult Jokers in mid to late game."
+  },
+  {
+    "name": "Joker Priority: S+ Tier",
+    "description": "S+ Jokers are game-winning. Always buy if affordable, even if it means selling other Jokers. Blueprint: copies the Joker to its right — the most flexible Joker in the game, lets you duplicate your strongest effect. Brainstorm: copies the leftmost Joker every hand — pairs devastatingly with Blueprint. Triboulet: each scored King or Queen gives x2 Mult — legendary, can carry a run alone with face card focus. Cavendish: x3 Mult with only a 1/1000 chance to be destroyed per round — reliable unconditional xMult. Hologram: gains x0.25 Mult each time a card is added to your deck — scales throughout entire run. Baron: each King held in hand gives x1.5 Mult — devastating with face card builds. Perkeo: creates a Negative copy of most recent consumable at end of shop — legendary, enables infinite consumable value. Chicot: disables every Boss Blind effect — removes the hardest part of each ante."
+  },
+  {
+    "name": "Joker Priority: S Tier",
+    "description": "S Tier Jokers can carry runs and should almost always be purchased when available. Vampire: gains x0.2 Mult per enhanced card played, removes enhancement after scoring — strong scaling xMult. Ride the Bus: gains +1 Mult per consecutive hand without a scoring face card — strong scaling flat Mult. Green Joker: gains +1 Mult per hand played, loses -1 per discard — reward for not over-discarding. Supernova: adds number of times poker hand has been played this run to Mult — scales with repetition. Constellation: gains x0.1 Mult every time a Planet card is used — makes planet cards extremely valuable. Abstract Joker: +3 Mult for each Joker owned — scales with full Joker slots. Swashbuckler: adds sell value of all other Jokers to Mult — rewards holding expensive Jokers. Madness: gains x0.5 Mult when Small or Big Blind is selected, destroys a random Joker — high risk high reward. The Duo: x2 Mult if hand contains a Pair. The Trio: x3 Mult if hand contains Three of a Kind. The Family: x4 Mult if hand contains Four of a Kind. The Order: x3 Mult if hand contains a Straight. The Tribe: x2 Mult if hand contains a Flush."
+  },
+  {
+    "name": "Joker Priority: A Tier",
+    "description": "A Tier Jokers are good if they fit the current hand type or build. Fibonacci: each played Ace, 2, 3, 5, or 8 gives +8 Mult — strong with low card builds. Scary Face: played face cards give +30 Chips — strong with face card builds. Bull: +2 Chips per dollar held — scales with money, pairs with economy builds. Bootstraps: +2 Mult per $5 held — scales with money. Odd Todd: odd rank cards give +31 Chips — strong chip generation. Even Steven: even rank cards give +4 Mult. Blackboard: x3 Mult if all cards held are Spades or Clubs — requires deck manipulation. Bloodstone: 1 in 2 chance for Hearts to give x1.5 Mult when scored. Arrowhead: Spades give +50 Chips when scored. Onyx Agate: Clubs give +7 Mult when scored. Acrobat: x3 Mult on final hand of each round — plan your last hand carefully. Card Sharp: x3 Mult if poker hand was already played this round — requires repetition. Dusk: retriggers all played cards on final hand — massive on last hand. Sock and Buskin: retrigger all played face cards — strong with face card builds. Hand-type Jokers (Jolly, Zany, Mad, Crazy, Droll, Sly, Wily, Clever, Devious, Crafty): good if they match your dominant hand type."
+  },
+  {
+    "name": "Joker Priority: B Tier",
+    "description": "B Tier Jokers are filler — only buy if joker slots are open and nothing better is available. Joker: simply +4 Mult — basic but reliable early game. Gros Michel: +15 Mult with 1/6 chance to be destroyed — good early, risky to rely on. Riff-Raff: creates 2 random Common Jokers when blind selected — early game value. Ice Cream: starts +100 Chips, loses -5 per hand — early game chip boost only. Popcorn: starts +20 Mult, loses -4 per round — fading value. Egg: gains $3 sell value per round — economy value. Rocket: earn $1 per round, +$2 after each Boss Blind — late economy. Satellite: earn $1 per unique Planet used — rewards planet purchasing."
+  },
+  {
+    "name": "Dominant Hand Strategy",
+    "description": "Pick one dominant hand type early in the run and commit to it. The dominant hand is the hand you play most often. Level it repeatedly with Planet cards to make its base Chips and Mult grow permanently. A leveled Flush at level 5 scores far more than a base Straight Flush at level 1. Do not spread Planet cards across multiple hand types — concentrate on one. On Red Deck, Flush is the most accessible dominant hand because the +1 discard lets you fish more aggressively. Pair is viable with the right Jokers (The Duo, Jolly Joker, Sly Joker). Straight requires setup but scales well with The Order and Crazy/Devious/Clever Jokers. After 5 plays of any hand type, that hand levels up naturally even without Planet cards."
+  },
+  {
+    "name": "Hand Selection Priority",
+    "description": "Always play the strongest available hand in this priority order: Straight Flush > Four of a Kind > Full House > Flush > Straight > Three of a Kind > Two Pair > Pair > High Card. If your dominant hand is lower on this list but has strong Joker support, you may prefer it over a higher-ranked hand. For example, if you have The Tribe (x2 Mult for Flush) and a leveled Flush, play Flush over a natural Straight. If the current hand does not contain Flush, Straight, or better, discard to fish for your dominant hand type rather than playing weak hands. Exception: on the final hand of a round, play whatever gives the best score — no more discards are useful."
+  },
+  {
+    "name": "Discard Strategy",
+    "description": "Use discards to fish for your dominant hand type. If you have 4 cards of the same suit, discard the other cards and try to complete a Flush. If you have 4 consecutive ranks, discard non-connecting cards and try to complete a Straight. Always save at least 1 discard for the Boss Blind in case the first hand is poor. Never use your last discard on a non-Boss blind round unless the hand is already strong. Do not over-discard — Green Joker loses Mult per discard, and discarding too aggressively wastes potential scoring hands. On The Hook boss blind, do not discard at all since the blind discards 2 cards from your hand after each play anyway."
+  },
+  {
+    "name": "Economy and Interest Strategy",
+    "description": "Interest in Balatro works as follows: you earn $1 for every $5 held, up to $5 maximum per round. To earn maximum interest you need at least $25. In early game (Ante 1-2), keep at least $20 to earn $4 interest per round. In mid game (Ante 3+), keep at least $25 to earn the maximum $5 per round. Do not overspend on marginal items just to use your money. However, if a S+ or S tier Joker appears in the shop, always buy it even if it dips below the interest floor — the Joker value outweighs a few dollars of lost interest. Economy Jokers like Bull and Bootstraps scale with money held, so maintaining a high cash balance also increases their scoring contribution."
+  },
+  {
+    "name": "Planet Card Priority",
+    "description": "Planet cards permanently level up a specific poker hand type for the rest of the run. Each level adds Chips and Mult to that hand. Always buy the Planet card corresponding to your dominant hand type when it appears in the shop, as long as you can afford it without dropping significantly below the interest floor. After buying a planet card for your dominant hand, use it immediately from your consumable slot. Repeated use of the same planet card stacks — leveling Flush 5 times creates dramatically higher scoring than leveling it once. Planet card to hand mapping: Mercury=High Card, Venus=Three of a Kind, Earth=Full House, Mars=Four of a Kind, Jupiter=Flush, Saturn=Straight, Uranus=Two Pair, Neptune=Straight Flush, Pluto=Pair."
+  },
+  {
+    "name": "Blind Selection Strategy",
+    "description": "Boss Blind cannot be skipped — always select it. At Ante 1 and Ante 2, always select both Small Blind and Big Blind. Do not skip early blinds — you need the money, interest income, and shop visits to build your Joker collection. Skipping a blind means losing the money reward AND the shop visit for that blind, which costs you Joker purchasing opportunities at the most critical point of the run. At Ante 3 and beyond, you may skip the Small Blind if the tag reward is strong (free Joker, rare tag, upgrade). Big Blind at Ante 3+ usually gives enough money that it is worth playing rather than skipping. Never skip both Small and Big Blind in the same Ante — you lose too much economy."
+  },
+  {
+    "name": "Joker Slot Management",
+    "description": "You have 5 Joker slots by default. Do not fill all 5 slots immediately. Keeping 1-2 slots open early game lets you take a strong S+ Joker when it appears without being forced to sell something valuable. By Ante 3-4, aim to have 3-4 Jokers that all point in the same direction. Five strong Jokers with synergy beat five powerful Jokers pulling in different directions. In late game (Ante 6-8), upgrade your Joker loadout aggressively — sell B and A tier Jokers to make room for xMult Jokers. The transition from flat Mult Jokers to xMult Jokers is what separates runs that reach Ante 8 from runs that stall."
+  },
+  {
+    "name": "Boss Blind Adaptation",
+    "description": "Each Boss Blind has a special effect that must be played around. The Psychic: must play exactly 5 cards every hand — plan your hand selection accordingly, avoid playing fewer cards. The Needle: play only 1 hand total this blind — play your strongest possible hand immediately. The Water: 0 discards — do not rely on discarding to improve your hand, play what you have. The Hook: discards 2 random cards from hand after each play — do not bother discarding before playing. The Eye: no repeated hand types this round — play a different hand type each time. The Arm: decreases level of played hand each time it is played — try to beat the blind in as few hands as possible. Suit debuff bosses (The Club debuffs Clubs, The Goad debuffs Spades, The Head debuffs Hearts, The Window debuffs Diamonds): avoid playing cards of the debuffed suit when scoring. The Plant debuffs all face cards — avoid playing face cards."
+  },
+  {
+    "name": "Scaling Principles",
+    "description": "Balatro runs succeed through exponential scaling, not linear growth. Three principles define a winning run: first, pick one dominant hand and level it with Planet cards repeatedly. Second, build toward xMult Jokers by mid game — flat Mult cannot reach Ante 8 chip requirements on its own. Third, maintain economy to afford rerolls and S-tier Jokers when they appear. The Blueprint and Brainstorm combination is the strongest scaling path in the game — if you have Blueprint, always position it next to your best xMult Joker before each scoring hand. Joker order matters: Jokers trigger left to right, so place Jokers that add flat Mult before Jokers that apply xMult."
+  },
+  {
+    "name": "Shop Reroll Strategy",
+    "description": "Rerolling costs $5 and increases by $1 each reroll. Reroll when the current shop has nothing useful and you have money above the interest floor. In early game (Ante 1-2), only reroll if you have 0 Jokers and there is nothing to buy — preserving money for interest is more important. In mid game (Ante 3-5), reroll once or twice if no strong Joker appears, especially if you have excess money above $25. In late game (Ante 6-8), aggressive rerolling for xMult Jokers is worth it. Never reroll when you are below the interest floor with no strong reason — you lose both the interest and the reroll cost."
+  }
+]
