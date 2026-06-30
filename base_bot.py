@@ -148,6 +148,7 @@ class BaseBot:
                     state = self._execute_shop_actions(state, metrics)
                 elif sname == "SMODS_BOOSTER_OPENED":
                     state = self._execute_pack_action(state)
+                    state = self._poll_until_stable(max_wait=10.0, interval=0.4)
                 elif sname == "GAME_OVER":
                     metrics["outcome"] = "lost"; final_state = state; break
                 else:
