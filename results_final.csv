@@ -172,3 +172,8 @@ timestamp,bot_type,seed,deck,stake,outcome,duration_seconds,final_ante,peak_ante
 2026-06-29 20:21:54,meta_bot,SEED071,RED,WHITE,lost,132.7,3,3,7,18,12,1,40,3,0,"{""straight"": 7, ""three_of_a_kind"": 1, ""two_pair"": 2, ""full_house"": 1, ""pair"": 3, ""flush"": 4}",0,0,0.0,
 2026-06-29 20:24:09,meta_bot,SEED072,RED,WHITE,lost,137.1,2,2,6,18,12,0,22,2,0,"{""two_pair"": 3, ""pair"": 1, ""straight"": 2, ""three_of_a_kind"": 2, ""flush"": 9, ""full_house"": 1}",0,0,0.0,
 2026-06-29 20:26:28,meta_bot,SEED073,RED,WHITE,lost,71.4,2,2,4,11,5,0,17,1,0,"{""four_of_a_kind"": 1, ""two_pair"": 2, ""flush"": 2, ""straight"": 3, ""full_house"": 1, ""pair"": 2}",0,0,0.0,
+2026-06-29 20:27:42,meta_bot,SEED074,RED,WHITE,lost,164.3,4,4,9,22,12,2,53,4,0,"{""flush"": 5, ""pair"": 4, ""straight"": 4, ""two_pair"": 5, ""full_house"": 2, ""three_of_a_kind"": 2}",0,0,0.0,
+2026-06-29 20:30:28,meta_bot,SEED075,RED,WHITE,lost,105.8,2,2,5,16,9,0,19,2,0,"{""two_pair"": 4, ""full_house"": 3, ""straight"": 3, ""three_of_a_kind"": 1, ""flush"": 4, ""pair"": 1}",0,0,0.0,
+2026-06-29 20:32:16,meta_bot,SEED076,RED,WHITE,lost,40.3,1,1,2,6,5,0,5,1,0,"{""flush"": 1, ""straight"": 1, ""two_pair"": 3, ""three_of_a_kind"": 1}",0,0,0.0,
+2026-06-29 20:32:58,meta_bot,SEED077,RED,WHITE,lost,116.0,2,2,6,17,9,0,23,2,0,"{""straight"": 5, ""two_pair"": 6, ""full_house"": 1, ""flush"": 3, ""three_of_a_kind"": 1, ""pair"": 1}",0,0,0.0,
+2026-06-29 20:34:56,meta_bot,SEED078,RED,WHITE,lost,115.2,3,3,7,15,11,1,64,3,0,"{""straight"": 2, ""three_of_a_kind"": 1, ""flush"": 7, ""pair"": 3, ""full_house"": 1, ""two_pair"": 1}",0,0,0.0,
