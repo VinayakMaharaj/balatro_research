@@ -357,3 +357,9 @@ timestamp,bot_type,seed,deck,stake,outcome,duration_seconds,final_ante,peak_ante
 2026-06-30 18:46:25,rag_meta_bot,SEED027,RED,WHITE,error,310.4,3,3,6,13,12,1,35,2,0,"{""play"": 13}",40,46073,0.414657,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
 2026-06-30 18:51:38,rag_meta_bot,SEED038,RED,WHITE,error,307.3,3,3,6,11,14,1,25,4,0,"{""play"": 11}",40,46314,0.416826,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
 2026-06-30 18:56:47,rag_meta_bot,SEED050,RED,WHITE,lost,355.5,3,3,8,16,11,1,38,5,0,"{""play"": 16}",43,50670,0.45603,
+2026-06-30 19:16:15,rag_meta_bot,SEED018,RED,WHITE,lost,629.2,4,4,10,28,22,2,43,6,0,"{""play"": 28}",72,86598,0.779382,
+2026-06-30 19:26:46,rag_meta_bot,SEED009,RED,WHITE,error,269.8,3,3,6,10,11,1,35,5,0,"{""play"": 10}",37,42627,0.383643,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-06-30 19:31:18,rag_meta_bot,SEED013,RED,WHITE,lost,221.1,2,2,4,11,6,0,13,3,0,"{""play"": 11}",26,30983,0.278847,
+2026-06-30 19:35:01,rag_meta_bot,SEED027,RED,WHITE,lost,242.0,2,2,5,9,12,0,24,2,0,"{""play"": 9}",32,37406,0.336654,
+2026-06-30 19:39:05,rag_meta_bot,SEED038,RED,WHITE,error,288.8,3,3,6,13,7,1,26,4,0,"{""play"": 13}",37,43308,0.389772,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-06-30 19:43:55,rag_meta_bot,SEED050,RED,WHITE,lost,435.8,3,3,8,17,15,1,35,5,0,"{""play"": 17}",49,59902,0.539118,
