@@ -980,3 +980,4 @@ timestamp,bot_type,seed,deck,stake,outcome,duration_seconds,final_ante,peak_ante
 2026-06-30 13:13:14,rag_meta_bot,SEED003,RED,WHITE,lost,677.6,5,5,11,26,31,3,56,7,0,"{""play"": 26}",83,98894,0.890046,
 2026-06-30 13:24:34,rag_meta_bot,SEED004,RED,WHITE,lost,188.6,1,1,3,8,8,0,6,2,0,"{""play"": 8}",23,27379,0.246411,
 2026-06-30 13:27:44,rag_meta_bot,SEED005,RED,WHITE,error,64.3,1,1,2,3,3,0,7,1,0,"{""play"": 3}",9,9741,0.087669,BalatroError: BAD_REQUEST - You can only play 5 cards
+2026-06-30 13:34:16,rag_meta_bot,SEED005,RED,WHITE,lost,227.7,2,2,4,11,9,0,13,2,0,"{""play"": 11}",28,31790,0.28611,
