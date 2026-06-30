@@ -1,66 +1,58 @@
 [
   {
     "name": "Scoring Formula",
-    "description": "Score = (Base Chips + Card Chips) x Multiplier. Base Chips and Multiplier come from the poker hand type played. Card Chips come from the rank value of each scoring card: 2=2, 3=3, 4=4, 5=5, 6=6, 7=7, 8=8, 9=9, T/J/Q/K=10, A=11. Flat Mult adds to the multiplier. xMult Jokers multiply the entire current multiplier — they are exponential not additive. Always prioritize xMult Jokers over flat Mult Jokers from Ante 3 onward."
+    "description": "Score = (Base Chips + Card Chips) x Multiplier. Base Chips and Multiplier come from the poker hand type played. Card Chips come from the rank value of each scoring card: 2=2, 3=3, 4=4, 5=5, 6=6, 7=7, 8=8, 9=9, T/J/Q/K=10, A=11."
   },
   {
     "name": "Joker Priority S+ Tier",
-    "description": "S+ Jokers are game-winning and should always be purchased if affordable, even if it means dipping below the interest floor. Blueprint copies the Joker to its right — position it next to your strongest xMult Joker before scoring hands. Brainstorm copies the leftmost Joker — if you own Blueprint, Brainstorm becomes extremely valuable and should be purchased immediately. If you own Brainstorm, Blueprint becomes extremely valuable. Cavendish gives x3 Mult with only a 1/1000 chance to be destroyed per round. Hologram gains x0.25 Mult each time a card is added to your deck. Baron gives x1.5 Mult per King held in hand. Triboulet gives x2 Mult per scored King or Queen. Chicot disables every Boss Blind effect. Perkeo creates a Negative copy of the most recent consumable at end of shop. Canio and Yorick are legendary xMult scalers."
+    "description": "S+ Jokers are the highest priority and should be bought whenever affordable. Tier includes: Blueprint, Brainstorm, Cavendish, Hologram, Baron, Triboulet, Chicot, Perkeo, Canio, Yorick, Obelisk, Vampire, Glass Joker, Campfire."
   },
   {
     "name": "Joker Priority S Tier",
-    "description": "S Tier Jokers should be purchased when available unless slots are full of S+ Jokers. Ride the Bus gains +1 Mult per consecutive hand without a scoring face card — strong scaling. Green Joker gains +1 Mult per hand played and loses -1 per discard — rewards not over-discarding. Supernova adds times the current hand type has been played this run to Mult. Constellation gains x0.1 Mult every time a Planet card is used — makes planet purchases very powerful. Abstract Joker gives +3 Mult per Joker owned. Swashbuckler adds sell value of all other Jokers to Mult. Acrobat gives x3 Mult on the final hand of each round. The Duo gives x2 Mult if hand contains a Pair. The Trio gives x3 Mult for Three of a Kind. The Family gives x4 Mult for Four of a Kind. The Order gives x3 Mult for a Straight. The Tribe gives x2 Mult for a Flush. Card Sharp gives x3 Mult if the poker hand was already played this round. Dusk retriggers all played cards on the final hand of each round. Sock and Buskin retriggers all played face cards."
+    "description": "S Tier Jokers are strong and should be bought unless joker slots are full of S+ Jokers. Tier includes: Ride the Bus, Green Joker, Supernova, Constellation, Fibonacci, Abstract Joker, Swashbuckler, Acrobat, Madness, The Duo, The Trio, The Family, The Order, The Tribe, Dusk, Sock and Buskin, Card Sharp."
   },
   {
     "name": "Joker Priority A Tier",
-    "description": "A Tier Jokers are good if they match the current dominant hand type or build. Fibonacci gives +8 Mult for each played Ace, 2, 3, 5, or 8. Scary Face gives +30 Chips for played face cards. Bull gives +2 Chips per dollar held. Bootstraps gives +2 Mult per $5 held. Odd Todd gives +31 Chips for odd rank cards. Even Steven gives +4 Mult for even rank cards. Blackboard gives x3 Mult if all held cards are Spades or Clubs. Bloodstone gives 1 in 2 chance for x1.5 Mult when Hearts are scored. Arrowhead gives +50 Chips when Spades are scored. Onyx Agate gives +7 Mult when Clubs are scored. Hand-type Jokers: Jolly and Sly for Pair builds, Zany and Wily for Three of a Kind builds, Mad for Two Pair builds, Crazy and Devious and Clever for Straight builds, Droll and Crafty for Flush builds. Only buy hand-type Jokers if they match the dominant hand."
+    "description": "A Tier Jokers are good if they fit the current dominant hand type. Tier includes: Scary Face, Smiley Face, Scholar, Even Steven, Odd Todd, Bull, Blue Joker, Bootstraps, Hack, Raised Fist, Jolly Joker, Zany Joker, Mad Joker, Crazy Joker, Droll Joker, Sly Joker, Wily Joker, Clever Joker, Devious Joker, Crafty Joker, Blackboard, Flower Pot, Bloodstone, Arrowhead, Onyx Agate, Runner, Square Joker, Spare Trousers."
   },
   {
     "name": "Joker Priority B Tier",
-    "description": "B Tier Jokers are filler and should only be purchased if joker slots are open and nothing better is available. Joker gives a flat +4 Mult. Gros Michel gives +15 Mult but has a 1/6 chance to be destroyed each round. Riff-Raff creates 2 random Common Jokers when a blind is selected. Ice Cream starts at +100 Chips but loses -5 per hand played. Popcorn starts at +20 Mult but loses -4 per round. Egg gains $3 sell value per round. Rocket earns $1 per round, increasing by $2 after each Boss Blind. Satellite earns $1 per unique Planet card used this run."
+    "description": "B Tier Jokers are filler — only buy if joker slots are open and nothing better is available. Tier includes: Joker, Gros Michel, Misprint, Riff-Raff, Ice Cream, Popcorn, Ramen, Egg, Rocket, Satellite."
   },
   {
-    "name": "xMult Transition Strategy",
-    "description": "In early game (Ante 1-2), flat Mult Jokers and chip Jokers are acceptable. From Ante 3 onward, actively prioritize xMult Jokers over flat Mult Jokers. xMult compounds exponentially — a run with two x3 Mult Jokers scores 9x more than base, while two +3 Mult Jokers only add 6. When evaluating shop items at Ante 3+, xMult Jokers (Blueprint, Brainstorm, Cavendish, Hologram, Baron, Vampire, Constellation, Ride the Bus late game) are boosted in priority. Sell B and A Tier flat Mult Jokers in late game to make room for xMult Jokers."
-  },
-  {
-    "name": "Blueprint and Brainstorm Combo",
-    "description": "Blueprint and Brainstorm are the strongest Joker combo in the game. If you own Blueprint, immediately prioritize buying Brainstorm if it appears in the shop. If you own Brainstorm, immediately prioritize buying Blueprint. Together they can effectively triple your most powerful Joker's effect. Blueprint copies the Joker to its right — position it next to your strongest xMult Joker. Brainstorm copies the leftmost Joker — place Brainstorm leftmost, Blueprint second, strongest Joker third for maximum effect. This combo is worth dipping below the interest floor to purchase."
+    "name": "Hand-Type Joker Affinity",
+    "description": "Some Jokers synergize with specific hand types and should be prioritized when that hand type is the dominant hand. Jolly Joker and Sly Joker favor Pair. Zany Joker and Wily Joker favor Three of a Kind. Mad Joker and Clever Joker favor Two Pair. Crazy Joker and Devious Joker favor Straight. Droll Joker and Crafty Joker favor Flush. The Duo favors Pair, The Trio favors Three of a Kind, The Family favors Four of a Kind, The Order favors Straight, The Tribe favors Flush, Spare Trousers favors Two Pair, Runner favors Straight. When a Joker's affinity matches the current dominant hand, prioritize it significantly higher than its base tier."
   },
   {
     "name": "Dominant Hand Strategy",
-    "description": "Pick one dominant hand type early in the run and commit to it. The dominant hand is whichever hand type has been played most often. Level it repeatedly with Planet cards to grow its base Chips and Multiplier permanently. Do not spread Planet cards across multiple hand types — concentrate on one. On Red Deck, Flush is the most accessible dominant hand because the extra discard allows more aggressive fishing. A Flush at level 5 scores dramatically more than a base Straight Flush at level 1. The dominant hand should also guide Joker purchases — prefer Jokers that synergize with it."
+    "description": "Pick one dominant hand type early in the run and commit to it. The dominant hand is whichever hand type has been played most often so far. Level it repeatedly with Planet cards to grow its base Chips and Multiplier permanently for the rest of the run. Do not spread Planet cards across multiple hand types — concentrate on the dominant one."
   },
   {
     "name": "Hand Selection Priority",
-    "description": "Always play the strongest available hand in this order: Straight Flush, Four of a Kind, Full House, Flush, Straight, Three of a Kind, Two Pair, Pair, High Card. If the dominant hand type is lower on this list but has strong Joker support that makes it score higher, prefer the dominant hand. If the current hand does not contain Flush, Straight, or better, discard to fish for the dominant hand rather than playing weak hands. On the final hand of a round, play whatever gives the best score since further discards are useless."
+    "description": "Always play the strongest available hand in this priority order: Straight Flush, Four of a Kind, Full House, Flush, Straight, Three of a Kind, Two Pair, Pair, High Card. If the current hand does not contain Flush, Straight, or better (meaning the best available hand is Three of a Kind or weaker), and you have discards remaining and more than 1 hand remaining this round, discard to try to improve before playing."
   },
   {
     "name": "Discard Strategy",
-    "description": "Use discards to fish for the dominant hand type. If 4 or more cards share the same suit, discard all other cards and fish for a Flush. If 4 cards fall within a 5-rank window (e.g., 5-6-7-9), discard non-connecting cards and fish for a Straight. Always save at least 1 discard for the Boss Blind in case the first hand is poor — never use the final discard on a Small or Big Blind round. Do not discard if the current hand is already Flush, Straight, or better. On The Hook boss blind, do not discard since the blind discards 2 cards after each hand anyway."
+    "description": "When discarding, fish for the dominant hand type. If 4 or more cards share the same suit, discard all other cards and try to complete a Flush. If 4 cards fall within a 5-rank window, discard non-connecting cards and try to complete a Straight. Always save at least 1 discard for the Boss Blind — never use the final discard on a Small or Big Blind round."
   },
   {
     "name": "Economy and Interest",
-    "description": "Interest works as follows: earn $1 for every $5 held, up to $5 maximum per round. Keep at least $20 in early game (Ante 1-2) to earn $4 interest per round. Keep at least $25 from Ante 3 onward to earn the maximum $5 interest. Do not overspend on marginal items just to use money. However, S+ and S Tier Jokers are worth purchasing even if it means dropping below the interest floor — the scoring value outweighs a few dollars of lost interest. Emergency exception: if you have 0 jokers at Ante 1-2, buy any affordable joker regardless of the interest floor."
+    "description": "Interest works as follows: earn $1 for every $5 held, up to $5 maximum per round. Keep at least $20 in early game (Ante 1-2) before spending on shop items. Keep at least $25 from Ante 3 onward. Exception: if you have 0 Jokers at Ante 1-2, buy any affordable Joker regardless of the interest floor since establishing a Joker is more urgent than interest income."
   },
   {
     "name": "Planet Card Priority",
-    "description": "Always buy the Planet card matching the dominant hand when it appears in the shop, as long as it is affordable without falling far below the interest floor. Use planet cards immediately from the consumable slot after purchasing. Multiple uses of the same planet card stack — leveling Flush 5 times creates dramatically higher scoring than leveling it once. If no dominant hand planet card is available, buy any planet card only if there is money above the interest floor. Planet to hand mapping: Mercury=High Card, Venus=Three of a Kind, Earth=Full House, Mars=Four of a Kind, Jupiter=Flush, Saturn=Straight, Uranus=Two Pair, Neptune=Straight Flush, Pluto=Pair."
+    "description": "Always buy the Planet card matching the dominant hand type when it appears in the shop and is affordable. If no Planet card matches the dominant hand, buying any other Planet card is acceptable if there is money available above the interest floor. Planet to hand mapping: Mercury=High Card, Venus=Three of a Kind, Earth=Full House, Mars=Four of a Kind, Jupiter=Flush, Saturn=Straight, Uranus=Two Pair, Neptune=Straight Flush, Pluto=Pair."
+  },
+  {
+    "name": "Joker Purchase Priority Order",
+    "description": "When deciding what to buy in the shop, follow this order: first, buy a Planet card matching the dominant hand if available and affordable. Second, if Joker slots are open, buy the highest-scoring available Joker based on tier and hand-type affinity, as long as it is affordable within the interest floor (or any amount if you have 0 Jokers). Third, if nothing else was bought, buy any affordable Planet card even if it does not match the dominant hand."
   },
   {
     "name": "Blind Selection Strategy",
-    "description": "The Boss Blind cannot be skipped — always select it. At Ante 1 and Ante 2, always select both Small Blind and Big Blind. Do not skip early blinds — losing the money reward and shop visit is too costly when joker collection is just starting. At Ante 3 and beyond, skip the Small Blind if the tag reward is valuable. Do not skip the Big Blind at any ante — it gives too much money and the shop visit is needed. Never skip both Small and Big Blind in the same Ante."
-  },
-  {
-    "name": "Joker Slot Management",
-    "description": "You have 5 Joker slots by default. In early game (Ante 1-2), keep 1 slot open unless an S+ Joker appears. Holding an open slot gives flexibility to take a strong Joker without being forced to sell something. By Ante 3-4, aim for 3-4 Jokers all pointing in the same direction. Five Jokers with strong synergy beat five powerful Jokers pulling in different directions. In late game (Ante 6-8), sell B and A Tier Jokers to make room for xMult Jokers. Never hold a weak Joker out of habit if a stronger one is available."
-  },
-  {
-    "name": "Shop Reroll Strategy",
-    "description": "Rerolling costs $5 and increases by $1 each reroll. Only reroll if the current shop has nothing useful AND money is above the interest floor after paying the reroll cost. At Ante 1, do not reroll — preserving money matters more than shop variety. At Ante 2 and beyond, reroll once if no useful Joker or dominant hand planet card appears and there is sufficient money above the interest floor. Do not reroll multiple times in one shop visit unless money is very high — each reroll increases the next reroll cost."
+    "description": "The Boss Blind cannot be skipped — always select it. At Ante 1 and Ante 2, always select both Small Blind and Big Blind — do not skip early blinds since the money, interest income, and shop visits are needed to build a Joker collection. At Ante 3 and beyond, skip the Small Blind for the tag reward. Do not skip the Big Blind at any ante — always select it."
   },
   {
     "name": "Boss Blind Adaptation",
-    "description": "Each Boss Blind has a special effect. The Psychic: must play exactly 5 cards every hand — always select 5 cards. The Needle: only 1 hand total — play the strongest possible hand immediately. The Water: 0 discards — do not rely on discarding, play what is dealt. The Hook: discards 2 random cards from hand after each play — do not discard before playing. The Eye: no repeated hand types in a single round — vary hand types each play. The Arm: decreases level of played hand after each play — try to beat the blind in as few hands as possible. Suit debuff bosses (The Club debuffs Clubs, The Goad debuffs Spades, The Head debuffs Hearts, The Window debuffs Diamonds): avoid playing cards of the debuffed suit. The Plant debuffs all face cards — avoid playing Jacks, Queens, and Kings."
+    "description": "Each Boss Blind has a special effect that should be considered when choosing how to play. The Psychic requires playing exactly 5 cards every hand. The Needle allows only 1 hand for the entire blind, so play your strongest hand immediately. The Water gives 0 discards, so do not rely on discarding. The Hook discards 2 random cards from your hand after each play, so discarding beforehand is wasteful. The Eye does not allow repeating hand types in the same round. The Arm decreases the level of a hand type each time it is played. Suit debuff bosses (The Club, The Goad, The Head, The Window) make cards of a specific suit score 0 chips — avoid relying on that suit. The Plant makes all face cards score 0 chips."
   }
 ]
