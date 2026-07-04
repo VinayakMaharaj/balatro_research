@@ -282,6 +282,10 @@ class RAGLLMBot(LLMBot):
         available_hands = detect_available_hands(hand)
 
         cards = [c for c in cards if isinstance(c,int) and 0<=c<len(hand)]
+        if action == "play":
+            cards = cards[:5]  # game only allows playing 1-5 cards
+        if action == "discard":
+            cards = cards[:5]  # game only allows discarding 1-5 cards
         if not cards:
             cards = list(range(min(5,len(hand))))
             logger.warning(f"RAG card indices out of range, using fallback {cards}")
