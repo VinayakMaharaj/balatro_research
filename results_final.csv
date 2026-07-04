@@ -411,3 +411,53 @@ timestamp,bot_type,seed,deck,stake,outcome,duration_seconds,final_ante,peak_ante
 2026-07-03 19:06:57,llm_bot,SEED048,RED,WHITE,lost,142.5,1,1,2,5,8,0,5,1,0,"{""play"": 5}",16,9341,0.084069,
 2026-07-03 19:09:21,llm_bot,SEED049,RED,WHITE,lost,369.1,3,3,9,16,13,0,32,8,0,"{""play"": 16}",46,25470,0.22923,
 2026-07-03 19:15:32,llm_bot,SEED050,RED,WHITE,lost,526.1,3,3,8,24,18,0,25,5,0,"{""play"": 24}",58,36464,0.328176,
+2026-07-04 14:21:06,rag_llm_bot,SEED001,RED,WHITE,error,369.4,3,3,4,13,14,4,19,3,0,"{""play"": 13}",39,50063,0.450567,BalatroError: INVALID_STATE - Method 'skip' requires one of these states: BLIND_SELECT
+2026-07-04 14:27:17,rag_llm_bot,SEED002,RED,WHITE,error,52.3,1,1,1,1,3,1,5,1,0,"{""play"": 1}",8,8701,0.078309,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-07-04 14:28:12,rag_llm_bot,SEED003,RED,WHITE,lost,160.3,1,1,2,6,6,1,9,0,0,"{""play"": 6}",16,20573,0.185157,
+2026-07-04 14:30:54,rag_llm_bot,SEED004,RED,WHITE,lost,222.5,2,2,3,8,7,1,9,2,0,"{""play"": 8}",21,27307,0.245763,
+2026-07-04 14:34:38,rag_llm_bot,SEED005,RED,WHITE,lost,101.2,1,1,1,4,4,1,4,0,0,"{""play"": 4}",10,12900,0.1161,
+2026-07-04 14:36:22,rag_llm_bot,SEED006,RED,WHITE,lost,264.7,2,2,4,10,9,2,16,1,0,"{""play"": 10}",28,35423,0.318807,
+2026-07-04 14:40:48,rag_llm_bot,SEED007,RED,WHITE,error,311.7,2,2,3,10,12,2,11,2,0,"{""play"": 10}",29,38140,0.34326,BalatroError: BAD_REQUEST - You can only play 5 cards
+2026-07-04 14:46:02,rag_llm_bot,SEED008,RED,WHITE,lost,316.8,2,2,4,12,9,2,16,2,0,"{""play"": 12}",30,38634,0.347706,
+2026-07-04 14:51:21,rag_llm_bot,SEED009,RED,WHITE,lost,118.2,1,1,1,4,4,2,4,0,0,"{""play"": 4}",11,14197,0.127773,
+2026-07-04 14:53:21,rag_llm_bot,SEED010,RED,WHITE,lost,405.5,3,3,6,14,13,3,36,3,0,"{""play"": 14}",41,52408,0.471672,
+2026-07-04 15:00:09,rag_llm_bot,SEED011,RED,WHITE,error,426.4,5,5,9,14,7,4,66,2,0,"{""play"": 14}",42,52945,0.476505,BalatroError: BAD_REQUEST - You can only play 5 cards
+2026-07-04 15:07:17,rag_llm_bot,SEED012,RED,WHITE,lost,275.0,2,2,3,10,12,3,13,1,0,"{""play"": 10}",30,37113,0.334017,
+2026-07-04 15:11:54,rag_llm_bot,SEED013,RED,WHITE,lost,127.8,1,1,2,5,4,1,10,1,0,"{""play"": 5}",13,16455,0.148095,
+2026-07-04 15:14:04,rag_llm_bot,SEED014,RED,WHITE,error,190.2,3,3,3,7,7,5,19,1,0,"{""play"": 7}",25,28620,0.25758,BalatroError: INVALID_STATE - Method 'skip' requires one of these states: BLIND_SELECT
+2026-07-04 15:17:16,rag_llm_bot,SEED015,RED,WHITE,error,324.5,3,3,4,11,11,3,7,4,0,"{""play"": 11}",34,43343,0.390087,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-07-04 15:22:43,rag_llm_bot,SEED016,RED,WHITE,lost,197.5,2,2,4,7,4,2,7,3,0,"{""play"": 7}",20,24765,0.222885,
+2026-07-04 15:26:02,rag_llm_bot,SEED017,RED,WHITE,lost,247.9,2,2,3,9,10,2,2,2,0,"{""play"": 9}",26,32899,0.296091,
+2026-07-04 15:30:12,rag_llm_bot,SEED018,RED,WHITE,error,12.0,1,1,0,0,0,1,4,0,0,{},2,1835,0.016515,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-07-04 15:30:26,rag_llm_bot,SEED019,RED,WHITE,error,12.1,1,1,0,0,0,2,4,0,0,{},2,1837,0.016533,BalatroError: INVALID_STATE - Method 'skip' requires one of these states: BLIND_SELECT
+2026-07-04 15:30:40,rag_llm_bot,SEED020,RED,WHITE,error,125.7,2,2,2,4,6,2,11,2,0,"{""play"": 4}",17,19156,0.172404,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-07-04 15:32:48,rag_llm_bot,SEED021,RED,WHITE,lost,274.6,2,2,3,9,9,3,9,2,0,"{""play"": 9}",26,33575,0.302175,
+2026-07-04 15:37:24,rag_llm_bot,SEED022,RED,WHITE,error,189.8,2,2,3,5,12,2,7,1,0,"{""play"": 5}",24,28910,0.26019,BalatroError: BAD_REQUEST - You can only play 5 cards
+2026-07-04 15:40:36,rag_llm_bot,SEED023,RED,WHITE,lost,234.1,2,2,3,9,8,2,5,2,0,"{""play"": 9}",24,30607,0.275463,
+2026-07-04 15:44:32,rag_llm_bot,SEED024,RED,WHITE,lost,214.9,1,1,2,8,8,1,8,1,0,"{""play"": 8}",20,26867,0.241803,
+2026-07-04 15:48:09,rag_llm_bot,SEED025,RED,WHITE,error,208.6,2,2,3,7,6,2,17,3,0,"{""play"": 7}",22,27492,0.247428,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-07-04 15:51:40,rag_llm_bot,SEED026,RED,WHITE,lost,144.9,1,1,2,5,4,1,5,1,0,"{""play"": 5}",13,17390,0.15651,
+2026-07-04 15:54:07,rag_llm_bot,SEED027,RED,WHITE,error,756.2,4,4,8,21,25,4,30,5,0,"{""play"": 21}",65,89087,0.801783,BalatroError: BAD_REQUEST - You can only play 5 cards
+2026-07-04 16:06:45,rag_llm_bot,SEED028,RED,WHITE,lost,278.9,2,2,3,7,12,3,20,1,0,"{""play"": 7}",27,35833,0.322497,
+2026-07-04 16:11:26,rag_llm_bot,SEED029,RED,WHITE,lost,226.0,2,2,3,10,6,1,10,1,0,"{""play"": 10}",22,28393,0.255537,
+2026-07-04 16:15:14,rag_llm_bot,SEED030,RED,WHITE,lost,313.9,3,3,6,11,9,3,39,4,0,"{""play"": 11}",34,41278,0.371502,
+2026-07-04 16:20:30,rag_llm_bot,SEED031,RED,WHITE,lost,182.5,1,1,3,6,7,0,8,2,0,"{""play"": 6}",18,22734,0.204606,
+2026-07-04 16:23:34,rag_llm_bot,SEED032,RED,WHITE,error,11.5,1,1,0,0,0,1,4,0,0,{},2,1822,0.016398,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-07-04 16:23:48,rag_llm_bot,SEED033,RED,WHITE,lost,243.0,2,2,3,7,8,3,10,2,0,"{""play"": 7}",23,30161,0.271449,
+2026-07-04 16:27:53,rag_llm_bot,SEED034,RED,WHITE,lost,184.8,1,1,3,8,6,0,10,1,0,"{""play"": 8}",19,24100,0.2169,
+2026-07-04 16:31:00,rag_llm_bot,SEED035,RED,WHITE,lost,162.5,1,1,2,6,5,1,10,0,0,"{""play"": 6}",15,19661,0.176949,
+2026-07-04 16:33:44,rag_llm_bot,SEED036,RED,WHITE,lost,108.8,1,1,2,6,2,1,10,1,0,"{""play"": 6}",12,14529,0.130761,
+2026-07-04 16:35:35,rag_llm_bot,SEED037,RED,WHITE,lost,69.9,1,1,1,4,1,1,4,0,0,"{""play"": 4}",7,8996,0.080964,
+2026-07-04 16:36:47,rag_llm_bot,SEED038,RED,WHITE,error,12.9,1,1,0,0,0,2,4,0,0,{},2,1831,0.016479,BalatroError: INVALID_STATE - Method 'skip' requires one of these states: BLIND_SELECT
+2026-07-04 16:37:02,rag_llm_bot,SEED039,RED,WHITE,lost,215.9,2,2,3,11,5,1,12,1,0,"{""play"": 11}",22,27800,0.2502,
+2026-07-04 16:40:40,rag_llm_bot,SEED040,RED,WHITE,error,191.8,2,2,3,8,6,2,8,2,0,"{""play"": 8}",23,27078,0.243702,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-07-04 16:43:54,rag_llm_bot,SEED041,RED,WHITE,error,117.8,1,1,2,5,4,1,6,1,0,"{""play"": 5}",13,16380,0.14742,BalatroError: BAD_REQUEST - You can only play 5 cards
+2026-07-04 16:45:53,rag_llm_bot,SEED042,RED,WHITE,error,108.7,2,2,2,3,5,3,6,2,0,"{""play"": 3}",15,17012,0.153108,BalatroError: INVALID_STATE - Method 'skip' requires one of these states: BLIND_SELECT
+2026-07-04 16:47:44,rag_llm_bot,SEED043,RED,WHITE,lost,177.3,1,1,2,7,6,1,6,1,0,"{""play"": 7}",17,22460,0.20214,
+2026-07-04 16:50:43,rag_llm_bot,SEED044,RED,WHITE,error,97.5,2,2,1,2,4,3,7,1,0,"{""play"": 2}",12,13870,0.12483,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-07-04 16:52:23,rag_llm_bot,SEED045,RED,WHITE,error,155.0,2,2,2,6,5,2,1,2,0,"{""play"": 6}",18,21712,0.195408,BalatroError: INVALID_STATE - Method 'select' requires one of these states: BLIND_SELECT
+2026-07-04 16:55:00,rag_llm_bot,SEED046,RED,WHITE,lost,96.0,1,1,1,4,4,2,4,0,0,"{""play"": 4}",11,12960,0.11664,
+2026-07-04 16:56:38,rag_llm_bot,SEED047,RED,WHITE,lost,344.5,2,2,4,11,13,2,6,3,0,"{""play"": 11}",33,42653,0.383877,
+2026-07-04 17:02:24,rag_llm_bot,SEED048,RED,WHITE,lost,277.0,2,2,3,10,9,2,5,2,0,"{""play"": 10}",26,35026,0.315234,
+2026-07-04 17:07:03,rag_llm_bot,SEED049,RED,WHITE,lost,278.3,2,2,4,11,10,2,26,1,0,"{""play"": 11}",30,37151,0.334359,
+2026-07-04 17:11:44,rag_llm_bot,SEED050,RED,WHITE,error,580.1,4,4,7,17,20,3,35,5,0,"{""play"": 17}",53,72179,0.649611,BalatroError: BAD_REQUEST - You can only play 5 cards
