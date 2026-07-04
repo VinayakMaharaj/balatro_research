@@ -80,6 +80,40 @@ class BaseBot:
         try:    return self.client.gamestate()
         except Exception: return {}
 
+    def _execute_blind_action(self, decision: str, blind_type: str, metrics: dict) -> dict:
+        """
+        Execute a blind select/skip action with INVALID_STATE retry logic.
+        Tag rewards from skipping can trigger intermediate states before
+        returning to BLIND_SELECT — if we get INVALID_STATE, poll and retry once.
+        """
+        def _do_action():
+            if decision == "skip" and blind_type != "boss":
+                metrics["blinds_skipped"] += 1
+                state = self.client.skip()
+            else:
+                state = self.client.select()
+            return self._poll_until_stable(max_wait=10.0, interval=0.4)
+
+        try:
+            return _do_action()
+        except BalatroError as e:
+            if "INVALID_STATE" in str(e.name) or "INVALID_STATE" in str(e.message):
+                logger.warning(f"INVALID_STATE on blind action '{decision}', polling and retrying...")
+                # Undo the blinds_skipped increment if we already did it
+                if decision == "skip" and blind_type != "boss":
+                    metrics["blinds_skipped"] = max(0, metrics["blinds_skipped"] - 1)
+                # Poll until game settles
+                time.sleep(1.0)
+                state = self._poll_until_stable(max_wait=12.0, interval=0.5)
+                # Retry once
+                try:
+                    return _do_action()
+                except BalatroError as e2:
+                    logger.warning(f"Blind action retry also failed: {e2}. Continuing from polled state.")
+                    return state
+            else:
+                raise
+
     def run_game(self, seed):
         import json
         start_time = time.time()
@@ -130,27 +164,25 @@ class BaseBot:
                         hand = get_hand_cards(state)
                         metrics["hands_played"] += 1
                         state = self.client.play(list(range(min(5,len(hand)))))
+
                 elif sname == "BLIND_SELECT":
                     decision   = self.select_blind_action(state)
                     blind_type = get_blind_type(state)
-                    if decision == "skip" and blind_type != "boss":
-                        metrics["blinds_skipped"] += 1
-                        state = self.client.skip()
-                        # Tag rewards from skipping can trigger pack opens or other states
-                        # Poll until stable before continuing
-                        state = self._poll_until_stable(max_wait=10.0, interval=0.4)
-                    else:
-                        state = self.client.select()
-                        state = self._poll_until_stable(max_wait=10.0, interval=0.4)
+                    state      = self._execute_blind_action(decision, blind_type, metrics)
+
                 elif sname == "ROUND_EVAL":
                     state = self.client.cash_out()
+
                 elif sname == "SHOP":
                     state = self._execute_shop_actions(state, metrics)
+
                 elif sname == "SMODS_BOOSTER_OPENED":
                     state = self._execute_pack_action(state)
                     state = self._poll_until_stable(max_wait=10.0, interval=0.4)
+
                 elif sname == "GAME_OVER":
                     metrics["outcome"] = "lost"; final_state = state; break
+
                 else:
                     time.sleep(0.3)
                     state = self.client.gamestate()
@@ -250,10 +282,8 @@ class BaseBot:
             try:
                 if action == "buy_card":
                     state = self.client.buy(card=action_dict["index"])
-                    # FIX: poll until stable — replaces hardcoded sleep, fixes hangs
                     state = self._poll_until_stable(max_wait=12.0, interval=0.4)
                     metrics["jokers_bought"] += 1
-                    # Use planet/tarot consumables immediately
                     consumables = state.get("consumables",{}).get("cards",[])
                     for i, cons in enumerate(consumables):
                         cs = cons.get("set","") or cons.get("ability",{}).get("set","")
