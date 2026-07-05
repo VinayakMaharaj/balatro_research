@@ -1,0 +1,4 @@
+agent,total_decisions,hand_parse_success,total_self_corrections,ante1_blind_skips,hand_recog_accuracy,play_discard_ratio,boss_adaptations
+LLMBot,2069,1415/1420 (99.6%),734,28,795/818,818 play / 602 discard,0
+RAGBot (rules),1640,1060/1099 (96.5%),1066,78,0/568,568 play / 531 discard,0
+RAGBot (strategy),2672,1845/1854 (99.5%),825,0,976/976,976 play / 878 discard,0

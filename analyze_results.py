@@ -326,12 +326,18 @@ def llm_cost_summary(df: pd.DataFrame, output_dir: Path):
 # ---------------------------------------------------------------------------
 
 def qualitative_summary(output_dir: Path):
+    """
+    Loads llm_decisions.jsonl, rag_decisions.jsonl, rag_meta_decisions.jsonl.
+    Filters to clean runs only (by timestamp).
+    Produces per-bot per-state breakdown and a top-level summary for the paper.
+    """
     all_records = []
 
+    print("Loading qualitative decision logs...")
     for bot, log_path in DECISION_LOGS.items():
         p = Path(log_path)
         if not p.exists():
-            print(f"No decision log found at {log_path}, skipping {bot}")
+            print(f"  No log found at {log_path}, skipping {bot}")
             continue
 
         clean_from = CLEAN_FROM.get(bot, "2026-01-01")
@@ -352,9 +358,23 @@ def qualitative_summary(output_dir: Path):
         print("No qualitative records found.")
         return
 
-    df   = pd.DataFrame(all_records)
-    rows = []
+    df = pd.DataFrame(all_records)
 
+    # Fix parsed_action if stored as string
+    def safe_get_action(x):
+        if isinstance(x, dict):
+            return x.get("action","unknown")
+        if isinstance(x, str):
+            try:
+                return json.loads(x).get("action","unknown")
+            except Exception:
+                pass
+        return "unknown"
+
+    # ---------------------------------------------------------------------------
+    # Per-bot per-state summary
+    # ---------------------------------------------------------------------------
+    state_rows = []
     for bot in ["llm_bot","rag_llm_bot","rag_meta_bot"]:
         if bot not in df["bot_type"].unique(): continue
         sub = df[df["bot_type"] == bot]
@@ -363,41 +383,121 @@ def qualitative_summary(output_dir: Path):
             state_sub = sub[sub["state"] == state]
             if state_sub.empty: continue
 
+            action_counts = {}
             if state in ("SELECTING_HAND","BLIND_SELECT"):
-                actions = state_sub["parsed_action"].apply(
-                    lambda x: x.get("action","unknown") if isinstance(x,dict) else "unknown"
-                )
+                actions = state_sub["parsed_action"].apply(safe_get_action)
                 action_counts = actions.value_counts().to_dict()
-            else:
-                action_counts = {}
 
-            # Self corrections
-            avg_corrections = 0.0
-            if "self_corrections" in state_sub.columns:
-                avg_corrections = round(state_sub["self_corrections"].mean(), 2)
+            avg_corrections = round(state_sub["self_corrections"].mean(), 2) \
+                if "self_corrections" in state_sub.columns else 0.0
+            parse_rate = round(state_sub["parse_success"].mean(), 3) \
+                if "parse_success" in state_sub.columns else 1.0
+            avg_reasoning = round(
+                state_sub["reasoning"].apply(lambda x: len(str(x))).mean(), 1
+            ) if "reasoning" in state_sub.columns else 0.0
 
-            # Parse success rate
-            parse_rate = 1.0
-            if "parse_success" in state_sub.columns:
-                parse_rate = round(state_sub["parse_success"].mean(), 3)
-
-            rows.append({
-                "bot_type":              BOT_LABELS.get(bot, bot),
-                "state":                 state,
-                "n_decisions":           len(state_sub),
-                "action_distribution":   json.dumps(action_counts),
-                "avg_reasoning_length":  round(
-                    state_sub["reasoning"].apply(lambda x: len(str(x))).mean(), 1
-                ) if "reasoning" in state_sub.columns else 0,
-                "avg_self_corrections":  avg_corrections,
-                "parse_success_rate":    parse_rate,
+            state_rows.append({
+                "bot_type":             BOT_LABELS.get(bot, bot),
+                "state":                state,
+                "n_decisions":          len(state_sub),
+                "action_distribution":  json.dumps(action_counts),
+                "avg_reasoning_length": avg_reasoning,
+                "avg_self_corrections": avg_corrections,
+                "parse_success_rate":   parse_rate,
             })
 
-    qual_df = pd.DataFrame(rows)
+    qual_df = pd.DataFrame(state_rows)
     path    = output_dir / "qualitative_summary.csv"
     qual_df.to_csv(path, index=False)
     print(f"\nSaved: {path}")
     print(qual_df.to_string(index=False))
+
+    # ---------------------------------------------------------------------------
+    # Top-level paper metrics summary
+    # ---------------------------------------------------------------------------
+    print("\n" + "="*60)
+    print("QUALITATIVE METRICS FOR PAPER")
+    print("="*60)
+
+    paper_rows = []
+    for bot in ["llm_bot","rag_llm_bot","rag_meta_bot"]:
+        if bot not in df["bot_type"].unique(): continue
+        sub = df[df["bot_type"] == bot]
+
+        hand_sub  = sub[sub["state"] == "SELECTING_HAND"]
+        blind_sub = sub[sub["state"] == "BLIND_SELECT"]
+        shop_sub  = sub[sub["state"] == "SHOP"]
+
+        # Parse success
+        parse_ok    = hand_sub["parse_success"].sum() if "parse_success" in hand_sub.columns else len(hand_sub)
+        parse_total = len(hand_sub)
+
+        # Self corrections total
+        total_corrections = int(sub["self_corrections"].sum()) if "self_corrections" in sub.columns else 0
+
+        # Ante 1 blind skips
+        ante1_skips = int(blind_sub[
+            (blind_sub["parsed_action"].apply(safe_get_action) == "skip") &
+            (blind_sub["ante"].apply(lambda x: int(x) if str(x).isdigit() else 0) <= 1)
+        ].shape[0]) if not blind_sub.empty else 0
+
+        # Hand recognition accuracy (played best available hand)
+        if "best_available" in hand_sub.columns and "action_chosen" in hand_sub.columns:
+            play_sub = hand_sub[hand_sub["action_chosen"] == "play"]
+            if not play_sub.empty and "available_hands" in play_sub.columns:
+                hits = 0
+                for _, row in play_sub.iterrows():
+                    avail = row.get("available_hands")
+                    if isinstance(avail, list) and avail:
+                        best = avail[0]
+                    elif isinstance(avail, str):
+                        try:
+                            avail_list = json.loads(avail)
+                            best = avail_list[0] if avail_list else None
+                        except Exception:
+                            best = None
+                    else:
+                        best = None
+                    if best and row.get("best_available") == best:
+                        hits += 1
+                hand_recog = f"{hits}/{len(play_sub)}"
+            else:
+                hand_recog = "n/a"
+        else:
+            hand_recog = "n/a"
+
+        # Play vs discard ratio
+        if not hand_sub.empty:
+            play_count    = int((hand_sub["parsed_action"].apply(safe_get_action) == "play").sum())
+            discard_count = int((hand_sub["parsed_action"].apply(safe_get_action) == "discard").sum())
+            ratio = f"{play_count} play / {discard_count} discard"
+        else:
+            ratio = "n/a"
+
+        # Boss adaptations
+        boss_adaptations = int(sub["boss_adaptations"].sum()) if "boss_adaptations" in sub.columns else 0
+
+        row = {
+            "agent":                 BOT_LABELS.get(bot, bot),
+            "total_decisions":       len(sub),
+            "hand_parse_success":    f"{int(parse_ok)}/{parse_total} ({int(parse_ok)/max(parse_total,1)*100:.1f}%)",
+            "total_self_corrections":total_corrections,
+            "ante1_blind_skips":     ante1_skips,
+            "hand_recog_accuracy":   hand_recog,
+            "play_discard_ratio":    ratio,
+            "boss_adaptations":      boss_adaptations,
+        }
+        paper_rows.append(row)
+
+        print(f"\n{BOT_LABELS.get(bot,bot)}:")
+        for k, v in row.items():
+            if k != "agent":
+                print(f"  {k:<28} {v}")
+
+    paper_df = pd.DataFrame(paper_rows)
+    path2    = output_dir / "qualitative_paper_metrics.csv"
+    paper_df.to_csv(path2, index=False)
+    print(f"\nSaved: {path2}")
     print()
 
 

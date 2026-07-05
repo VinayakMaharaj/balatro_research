@@ -1,4 +1,10 @@
-bot_type,state,n_decisions,action_distribution,avg_reasoning_length
-llm_bot,SELECTING_HAND,1549,"{""play"": 887, ""discard"": 662}",192.1
-llm_bot,SHOP,273,{},195.6
-llm_bot,BLIND_SELECT,426,"{""select"": 347, ""skip"": 79}",142.7
+bot_type,state,n_decisions,action_distribution,avg_reasoning_length,avg_self_corrections,parse_success_rate
+LLMBot,SELECTING_HAND,1420,"{""play"": 818, ""discard"": 602}",198.9,0.53,0.996
+LLMBot,SHOP,257,{},207.8,0.01,1.0
+LLMBot,BLIND_SELECT,392,"{""select"": 324, ""skip"": 68}",139.4,0.0,0.997
+RAGBot (rules),SELECTING_HAND,1099,"{""play"": 568, ""discard"": 531}",210.2,0.95,0.965
+RAGBot (rules),SHOP,159,{},224.7,0.0,1.0
+RAGBot (rules),BLIND_SELECT,382,"{""select"": 228, ""skip"": 154}",154.8,0.05,0.966
+RAGBot (strategy),SELECTING_HAND,1854,"{""play"": 976, ""discard"": 878}",218.7,0.44,0.995
+RAGBot (strategy),SHOP,351,{},241.6,0.01,1.0
+RAGBot (strategy),BLIND_SELECT,467,"{""select"": 421, ""skip"": 46}",115.3,0.0,1.0
