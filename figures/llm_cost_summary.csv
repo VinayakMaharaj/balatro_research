@@ -1,0 +1,3 @@
+bot_type,n_games,avg_llm_calls,avg_tokens_per_game,avg_cost_per_game_usd,total_cost_usd,projected_100game_cost_usd
+llm_bot,50,32.8,18867.0,0.1698,8.49,16.98
+rag_llm_bot,50,23.9,30701.0,0.27631,13.8154,27.63

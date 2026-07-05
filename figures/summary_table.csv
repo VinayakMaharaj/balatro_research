@@ -1,4 +1,5 @@
 bot_type,n_games,final_ante_mean,final_ante_std,final_ante_median,peak_ante_mean,peak_ante_std,peak_ante_median,final_round_mean,final_round_std,final_round_median,hands_played_mean,hands_played_std,hands_played_median,discards_used_mean,discards_used_std,discards_used_median,blinds_skipped_mean,blinds_skipped_std,blinds_skipped_median,final_dollars_mean,final_dollars_std,final_dollars_median,jokers_bought_mean,jokers_bought_std,jokers_bought_median,won_mean,won_std,won_median
-flush_bot,100,1.0,0.0,1.0,1.0,0.0,1.0,1.6,0.492,2.0,5.4,1.504,5.0,0.0,0.0,0.0,0.0,0.0,0.0,6.8,2.494,7.0,0.0,0.0,0.0,0.0,0.0,0.0
-meta_bot,100,1.8,0.752,2.0,1.8,0.752,2.0,3.8,0.752,4.0,10.0,2.202,10.0,7.4,5.148,10.0,1.6,1.504,2.0,15.2,10.962,8.0,1.6,0.804,1.0,0.0,0.0,0.0
-rl_bot,50,1.0,0.0,1.0,1.0,0.0,1.0,1.0,0.0,1.0,4.0,0.0,4.0,0.0,0.0,0.0,2.0,0.0,2.0,4.0,0.0,4.0,0.0,0.0,0.0,0.0,0.0,0.0
+flush_bot,100,1.14,0.349,1.0,1.14,0.349,1.0,2.35,0.957,2.0,8.01,3.307,7.0,0.0,0.0,0.0,0.0,0.0,0.0,10.01,4.587,9.0,0.0,0.0,0.0,0.0,0.0,0.0
+meta_bot,99,2.061,0.78,2.0,2.061,0.78,2.0,5.02,1.9,5.0,13.303,4.623,13.0,8.283,3.956,8.0,0.283,0.554,0.0,23.444,14.394,22.0,1.697,1.138,1.0,0.0,0.0,0.0
+llm_bot,50,2.08,0.944,2.0,2.08,0.944,2.0,4.94,2.59,4.0,12.94,6.261,12.5,9.56,4.55,8.5,0.76,0.916,1.0,20.22,19.8,13.5,3.12,2.076,3.0,0.0,0.0,0.0
+rag_llm_bot,50,1.88,0.918,2.0,1.88,0.918,2.0,3.16,1.754,3.0,8.68,3.951,8.0,7.68,3.633,7.5,2.1,1.147,2.0,13.5,14.51,9.0,1.52,1.199,1.0,0.0,0.0,0.0

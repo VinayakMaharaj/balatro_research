@@ -1,0 +1,4 @@
+bot_type,state,n_decisions,action_distribution,avg_reasoning_length
+llm_bot,SELECTING_HAND,1549,"{""play"": 887, ""discard"": 662}",192.1
+llm_bot,SHOP,273,{},195.6
+llm_bot,BLIND_SELECT,426,"{""select"": 347, ""skip"": 79}",142.7
