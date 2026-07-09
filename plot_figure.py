@@ -33,7 +33,7 @@ from matplotlib.ticker import MultipleLocator
 # ---------------------------------------------------------------------------
 
 FIG_WIDTH   = 7.16   # inches — IEEE double column
-FIG_HEIGHT  = 3.2    # inches
+FIG_HEIGHT  = 2.8    # inches
 DPI         = 300
 
 # Colorblind-safe palette (Wong 2011)
@@ -152,50 +152,60 @@ def plot_qualitative(ax: plt.Axes):
       - Parse failure rate (%)
     """
 
-    # From analyze_results.py qualitative output
+    # Qualitative metrics from analyze_results.py output
+    # self_corr: avg self-corrections per hand decision
+    # ante1_skips: total ante-1 blind skips across 50 seeds
+    # parse_fail: parse failure rate as percentage (0-100 scale / 10 for display)
     metrics = {
-        "rag_llm_bot":  {"self_corr": 0.95, "ante1_skips": 78,  "parse_fail": 3.5},
-        "llm_bot":      {"self_corr": 0.52, "ante1_skips": 28,  "parse_fail": 0.4},
-        "rag_meta_bot": {"self_corr": 0.44, "ante1_skips": 0,   "parse_fail": 0.5},
+        "rag_llm_bot":  {"self_corr": 0.95, "ante1_skips": 78,  "parse_fail_pct": 3.5},
+        "llm_bot":      {"self_corr": 0.52, "ante1_skips": 28,  "parse_fail_pct": 0.4},
+        "rag_meta_bot": {"self_corr": 0.44, "ante1_skips": 0,   "parse_fail_pct": 0.5},
     }
 
-    n_bots   = len(LLM_BOTS)
-    n_groups = 3
-    width    = 0.22
-    x        = np.arange(n_bots)
+    width = 0.22
+    x     = np.arange(len(LLM_BOTS))
 
-    # Normalise ante-1 skips to per-game (50 seeds each)
-    skips_per_game  = [metrics[b]["ante1_skips"] / 50 for b in LLM_BOTS]
-    self_corr       = [metrics[b]["self_corr"] for b in LLM_BOTS]
-    parse_fail      = [metrics[b]["parse_fail"] for b in LLM_BOTS]
+    # Normalise all metrics to same scale (0-1) for grouped bars
+    # self_corr already 0-1 range
+    # ante1_skips: normalise by max (78) -> 0-1
+    # parse_fail_pct: already small %, divide by 10 to bring to ~0-1 range
+    max_skips = 78.0
 
-    bar_colors = ["#D55E00", "#F0E442", "#0072B2"]  # colorblind safe
+    self_corr  = [metrics[b]["self_corr"] for b in LLM_BOTS]
+    skips_norm = [metrics[b]["ante1_skips"] / max_skips for b in LLM_BOTS]
+    parse_norm = [metrics[b]["parse_fail_pct"] / 10.0 for b in LLM_BOTS]
 
-    b1 = ax.bar(x - width, self_corr,    width, label="Self-corrections / hand",
+    bar_colors = ["#D55E00", "#F0E442", "#0072B2"]
+
+    b1 = ax.bar(x - width, self_corr,  width, label="Self-corrections / hand",
                 color=bar_colors[0], alpha=0.85, linewidth=0.3, edgecolor="black")
-    b2 = ax.bar(x,          skips_per_game, width, label="Ante-1 skips / game",
+    b2 = ax.bar(x,          skips_norm, width, label=f"Ante-1 skips (÷{int(max_skips)})",
                 color=bar_colors[1], alpha=0.85, linewidth=0.3, edgecolor="black")
-    b3 = ax.bar(x + width,  parse_fail,  width, label="Parse failure (%)",
+    b3 = ax.bar(x + width,  parse_norm, width, label="Parse fail rate (÷10%)",
                 color=bar_colors[2], alpha=0.85, linewidth=0.3, edgecolor="black")
 
-    # Value labels on bars
-    for bars in [b1, b2, b3]:
-        for bar in bars:
+    # Raw value labels above each bar
+    raw_labels = [
+        [f"{metrics[b]['self_corr']:.2f}" for b in LLM_BOTS],
+        [str(metrics[b]["ante1_skips"]) for b in LLM_BOTS],
+        [f"{metrics[b]['parse_fail_pct']:.1f}%" for b in LLM_BOTS],
+    ]
+    for bars, labels in zip([b1, b2, b3], raw_labels):
+        for bar, label in zip(bars, labels):
             h = bar.get_height()
-            if h > 0.05:
-                ax.text(bar.get_x() + bar.get_width() / 2, h + 0.03,
-                        f"{h:.2f}".rstrip("0").rstrip("."),
-                        ha="center", va="bottom", fontsize=6)
+            ax.text(bar.get_x() + bar.get_width() / 2, h + 0.02,
+                    label, ha="center", va="bottom", fontsize=5.5)
 
     ax.set_xticks(x)
     ax.set_xticklabels(LLM_BOT_LABELS)
-    ax.set_ylabel("Value (see legend)")
-    ax.set_ylim(0, 1.8)
-    ax.yaxis.set_major_locator(MultipleLocator(0.5))
+    ax.set_ylabel("Normalised value")
+    ax.set_ylim(0, 1.35)
+    ax.yaxis.set_major_locator(MultipleLocator(0.25))
     ax.set_title("(b) Decision quality (LLM agents)", loc="left", pad=3)
     ax.tick_params(axis="x", which="both", bottom=False)
     ax.legend(loc="upper right", frameon=False, ncol=1,
-              handlelength=1.2, handletextpad=0.4, labelspacing=0.3)
+              handlelength=1.0, handletextpad=0.4, labelspacing=0.2,
+              fontsize=6)
 
 
 # ---------------------------------------------------------------------------
@@ -221,7 +231,7 @@ def main(results_path: str, output_dir: str):
         figsize=(FIG_WIDTH, FIG_HEIGHT),
         gridspec_kw={"width_ratios": [1.1, 1]},
     )
-    fig.subplots_adjust(wspace=0.32)
+    fig.subplots_adjust(wspace=0.35, left=0.08, right=0.98, top=0.93, bottom=0.15)
 
     plot_boxplot(ax_a, df)
     plot_qualitative(ax_b)
