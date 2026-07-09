@@ -53,7 +53,7 @@ BOT_LABELS = {
     "rag_meta_bot": "RAGBot\n(strategy)",
 }
 
-BOT_ORDER = ["flush_bot", "meta_bot", "rag_llm_bot", "llm_bot", "rag_meta_bot"]
+BOT_ORDER = ["meta_bot", "llm_bot", "rag_meta_bot"]
 
 LLM_BOTS       = ["rag_llm_bot", "llm_bot", "rag_meta_bot"]
 LLM_BOT_LABELS = ["RAGBot\n(rules)", "LLMBot", "RAGBot\n(strategy)"]
