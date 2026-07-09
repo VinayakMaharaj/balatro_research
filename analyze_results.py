@@ -37,12 +37,14 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 BOT_ORDER = [
-    "flush_bot",
     "meta_bot",
-    "rag_llm_bot",
     "llm_bot",
     "rag_meta_bot",
+    "flush_bot",
+    "rag_llm_bot",
 ]
+
+PRIMARY_BOTS = ["meta_bot", "llm_bot", "rag_meta_bot"]
 
 BOT_COLORS = {
     "flush_bot":   "#636EFA",
@@ -132,9 +134,6 @@ def compute_summary(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def print_summary_table(summary: pd.DataFrame):
-    print("=" * 70)
-    print("RESULTS SUMMARY")
-    print("=" * 70)
     key_cols = [
         "bot_type","n_games",
         "final_ante_mean","final_ante_std",
@@ -145,14 +144,29 @@ def print_summary_table(summary: pd.DataFrame):
         "won_mean",
     ]
     cols = [c for c in key_cols if c in summary.columns]
-    print(summary[cols].to_string(index=False))
+
+    print("=" * 70)
+    print("PRIMARY RESULTS (MetaBot vs LLMBot vs RAGBot strategy)")
+    print("=" * 70)
+    primary = summary[summary["bot_type"].isin(PRIMARY_BOTS)]
+    print(primary[cols].to_string(index=False))
+    print()
+
+    print("=" * 70)
+    print("SECONDARY / ABLATION AGENTS")
+    print("=" * 70)
+    secondary = summary[~summary["bot_type"].isin(PRIMARY_BOTS)]
+    if not secondary.empty:
+        print(secondary[cols].to_string(index=False))
     print()
 
 
 def significance_tests(df: pd.DataFrame, metric: str = "final_ante"):
-    bots = [b for b in BOT_ORDER if b in df["bot_type"].unique()]
-    print(f"Pairwise Mann-Whitney U tests: {metric}")
+    primary  = [b for b in PRIMARY_BOTS if b in df["bot_type"].unique()]
+    all_bots = [b for b in BOT_ORDER if b in df["bot_type"].unique()]
+    print(f"Pairwise Mann-Whitney U tests (primary agents): {metric}")
     print("-" * 50)
+    bots = primary
     for i, b1 in enumerate(bots):
         for b2 in bots[i+1:]:
             g1 = df[df["bot_type"] == b1][metric].dropna()
