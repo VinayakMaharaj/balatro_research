@@ -1,7 +1,35 @@
-﻿gamestate_cache/
+﻿# Decision logs — large files, optional to exclude
+# llm_decisions.jsonl
+# rag_decisions.jsonl
+# rag_meta_decisions.jsonl
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
 .env
 api_keys.txt
+
+# W&B
 wandb/
+
+# RL model weights
 rl_model/
+*.zip
+
+# Game cache
+gamestate_cache/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Figures (generated, not source)
+figures/*.png
+figures/*.pdf
+figures/*.svg
+
+# Jupyter
+*.ipynb_checkpoints/
