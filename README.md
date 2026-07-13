@@ -1,79 +1,85 @@
 # Can an LLM Play Balatro Without Ever Practicing?
 
-**Benchmarking agent architectures on long-horizon, sparse-reward decision problems**
+**Comparing retrieval-augmented and zero-shot LLM agents against a hand-coded heuristic on a long-horizon sequential decision problem**
 
-> University of Toronto · Supervised Research · Target venue: IEEE Conference on Games 2027  
-> Supervised by Prof. Patrick Hosein (TTLab, University of the West Indies)
+> Vinayak Maharaj, University of Toronto  
+> Prof. Patrick Hosein, TTLab, University of the West Indies  
+> Published at IEEE ICTMOD 2026
 
 ---
 
 ## Overview
 
-This project uses **Balatro** — a poker-based roguelike card game — as a testbed to compare how different AI paradigms handle long-horizon strategic decisions with sparse, delayed rewards. The central research question is whether a zero-shot large language model can outperform a trained reinforcement learning agent on a task it has never explicitly practiced.
+This repository contains the full experimental code for the paper *"Can an LLM Play Balatro Without Ever Practicing?"*, which uses **Balatro** — a poker-based roguelike card game — as a testbed for evaluating how different AI approaches handle long-horizon decision-making under uncertainty and sparse rewards.
 
-Five agents are evaluated under controlled conditions (identical seeds, deck, stake):
-
-| Agent | Paradigm | Description |
-|---|---|---|
-| **FlushBot** | Rule-based (floor) | Always plays the best flush available, never buys anything. Absolute baseline. |
-| **MetaBot** | Rule-based (meta) | Tiered joker priority, dominant hand tracking, interest-aware economy, conservative blind skipping. |
-| **LLMBot** | Zero-shot LLM | Formats game state as a structured prompt, calls Claude Sonnet 4.6, parses JSON response. No strategy hints — pure reasoning from scratch. |
-| **RAGLLMBot** | LLM + RAG | Same as LLMBot but retrieves relevant rules from a Pinecone vector index before each decision. Simulates a player who read the rulebook. |
-| **RLBot** | Reinforcement Learning | MaskablePPO (Stable-Baselines3) trained on a custom mock environment, evaluated on the real game via HTTP API. |
+The central research question: can a zero-shot large language model, with no prior training on the task, match or exceed a carefully hand-coded heuristic agent? And does retrieval-augmented generation (RAG) with expert strategy knowledge close the gap further?
 
 ---
 
-## Key Findings (Preliminary)
+## Key Results
 
-| Agent | Avg Final Ante | Avg Final Round | Notes |
+| Agent | Avg Final Ante | n | Description |
 |---|---|---|---|
-| FlushBot | 1.03 | 1.6 | Floor baseline |
-| MetaBot | ~2.2 | ~5.2 | Ceiling — full heuristic |
-| RAGLLMBot | ~1.75 | ~2.75 | Rules context boosts LLM reasoning |
-| LLMBot | ~1.50 | ~3.75 | Zero-shot surprisingly competitive |
-| RLBot | ~1.40 | ~3.20 | Limited by sim-to-real gap |
+| **RAGBot (strategy)** | **2.24** | 48 | LLM + expert strategy via RAG |
+| **LLMBot** | **2.08** | 50 | Zero-shot Claude Sonnet 4.6 |
+| **MetaBot** | **2.06** | 99 | Hand-coded heuristic baseline |
+| RAGBot (rules) | 1.88 | 50 | LLM + rules-only RAG (ablation) |
+| FlushBot | 1.14 | 100 | Rule-based floor baseline |
 
-**Core finding:** Zero-shot Claude Sonnet 4.6 outperforms a 120M-step MaskablePPO agent. The RL agent's failure is traceable to two causes: a persistent sim-to-real reward signal gap (cash hoarding learned in mock env) and the fundamental limitation of a memoryless MLP policy for long-horizon game strategy.
+**Finding 1:** RAGBot (strategy) outperforms MetaBot (2.24 vs 2.06), demonstrating that LLM reasoning over expert strategy knowledge can exceed deterministic execution of the same knowledge.
 
-Full results tracked at [wandb.ai/vinayakcpa-university-of-toronto/balatro-research](https://wandb.ai/vinayakcpa-university-of-toronto/balatro-research).
+**Finding 2:** Zero-shot LLMBot matches MetaBot (2.08 vs 2.06, p=ns), showing that Claude Sonnet's pretraining encodes sufficient game knowledge to compete with a hand-coded heuristic.
+
+**Finding 3 (negative result):** Rules-only RAG underperforms zero-shot LLM (1.88 vs 2.08). Retrieved rules add noise rather than signal because Claude already encodes Balatro's mechanics from pretraining data. This is supported qualitatively — RAGBot (rules) produced 0.95 self-corrections per hand decision vs 0.44 for RAGBot (strategy).
+
+---
+
+## Agents
+
+| Agent | File | Paradigm |
+|---|---|---|
+| FlushBot | `heuristic_bots.py` | Rule-based floor — always plays best flush, never buys |
+| MetaBot | `heuristic_bots.py` | Hand-coded heuristic with tiered joker priority, dominant hand tracking, economy rules |
+| LLMBot | `llm_bot.py` | Zero-shot Claude Sonnet 4.6, mechanical game state prompt only |
+| RAGBot (rules) | `rag_pipeline.py` | LLM + Pinecone rules corpus (27 vectors, official game mechanics) |
+| RAGBot (strategy) | `rag_meta_pipeline.py` | LLM + Pinecone strategy corpus (13 chunks mirroring MetaBot's decision logic) |
 
 ---
 
 ## Technical Stack
 
 - **Language:** Python 3.10
-- **RL:** MaskablePPO via `stable-baselines3` + `sb3-contrib`, GPU training (CUDA)
+- **Game interface:** [coder/balatrobot](https://github.com/coder/balatrobot) HTTP JSON-RPC mod (v1.5.0)
 - **LLM:** Anthropic Claude Sonnet 4.6 (`claude-sonnet-4-6`)
-- **Vector store:** Pinecone (`balatro-rules` index, 26 rule vectors, `all-MiniLM-L6-v2` embeddings)
-- **Game API:** [coder/balatrobot](https://github.com/coder/balatrobot) HTTP JSON-RPC mod (v1.5.0, port 12346)
+- **Vector store:** Pinecone (`balatro-rules` and `balatro-strategy` indexes, `all-MiniLM-L6-v2` embeddings)
 - **Experiment tracking:** Weights & Biases
 - **Analysis:** pandas, scipy, matplotlib
 
 ---
 
-## Project Structure
+## Repository Structure
 
 ```
 balatro_research/
-├── base_bot.py            # Base class: game loop, CSV logging, W&B tracking
-├── balatro_client.py      # HTTP JSON-RPC 2.0 client for Balatrobot API
-├── heuristic_bots.py      # FlushBot + MetaBot implementations
-├── llm_bot.py             # LLMBot — zero-shot Claude Sonnet 4.6
-├── rag_pipeline.py        # RAGLLMBot — LLM + Pinecone retrieval
-├── rl_bot.py              # RLBot — MaskablePPO policy, diagnostic tracker
-├── balatro_mock_env.py    # Custom mock Gymnasium env (OBS_DIM=148, 120M step training)
-├── balatro_env.py         # Real-game Gymnasium env (wraps live API)
-├── run_all.py             # Master experiment runner
-├── analyze_results.py     # Statistical analysis + figure generation
+├── base_bot.py              # Base class: game loop, CSV logging, W&B tracking
+├── balatro_client.py        # HTTP JSON-RPC client for balatrobot API
+├── heuristic_bots.py        # FlushBot and MetaBot
+├── llm_bot.py               # LLMBot — zero-shot Claude Sonnet 4.6
+├── rag_pipeline.py          # RAGBot (rules) — LLM + rules-only Pinecone index
+├── rag_meta_pipeline.py     # RAGBot (strategy) — LLM + strategy Pinecone index
+├── analyze_results.py       # Statistical analysis and figure generation
+├── plot_figure.py           # IEEE-formatted publication figures (PDF + SVG)
 ├── data/
-│   ├── rules.json         # 26 official Balatro rules (RAG corpus)
-│   └── jokers.json        # 150 joker descriptions
-├── results_final.csv      # Canonical experiment results
-├── llm_decisions.jsonl    # Per-decision LLM reasoning log (qualitative analysis)
-├── rag_decisions.jsonl    # Per-decision RAG-LLM reasoning log
-├── diagnostics.json       # RLBot per-game death reason classification
-└── rl_model/
-    └── ppo_balatro.zip    # Trained MaskablePPO model (120M steps, 16 envs)
+│   ├── rules.json           # 27 official game rules (RAG corpus)
+│   └── strategy.json        # 13 strategy chunks mirroring MetaBot's logic
+├── results_final.csv        # Full experimental results (347 valid games)
+├── llm_decisions.jsonl      # Per-decision LLM reasoning log
+├── rag_decisions.jsonl      # Per-decision RAGBot (rules) reasoning log
+├── rag_meta_decisions.jsonl # Per-decision RAGBot (strategy) reasoning log
+└── figures/
+    ├── figure1_performance.pdf   # Box-and-whisker: final ante by agent
+    ├── figure2_qualitative.pdf   # Decision quality metrics: LLM agents
+    └── summary_table.csv         # Mean ± std per agent for all metrics
 ```
 
 ---
@@ -82,87 +88,87 @@ balatro_research/
 
 ### Requirements
 
-- Python 3.10
-- Balatro (Steam) with [coder/balatrobot mod](https://github.com/coder/balatrobot) v1.5.0 installed
-- CUDA-capable GPU (recommended for RL training)
-- Anthropic API key (for LLMBot/RAGLLMBot)
-- Pinecone API key (for RAGLLMBot)
+- Python 3.10+
+- Balatro (Steam) with [coder/balatrobot](https://github.com/coder/balatrobot) mod v1.5.0
+- Anthropic API key
+- Pinecone API key (for RAG agents)
 
-### Install dependencies
+### Install
 
 ```bash
-pip install -r requirements.txt --break-system-packages
+pip install -r requirements.txt
 ```
 
-### Set API keys (Windows PowerShell — persists across sessions)
+### Set API keys (Windows — persists across sessions)
 
 ```powershell
 [System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY", "your_key", "User")
 [System.Environment]::SetEnvironmentVariable("PINECONE_API_KEY", "your_key", "User")
 ```
 
-### Start Balatro
+### Build Pinecone indexes (one-time)
 
-Launch Balatro with the balatrobot mod loaded. The HTTP API runs on `127.0.0.1:12346` by default.
+```bash
+# Rules index for RAGBot (rules)
+python rag_pipeline.py --build-index
+
+# Strategy index for RAGBot (strategy)
+python rag_meta_pipeline.py --build-index
+```
 
 ---
 
 ## Running Experiments
 
-### Run all agents (sequential)
+### Heuristic agents (no API required)
 
 ```bash
-# Full run — 100 seeds each heuristic, 50 seeds each LLM/RAG/RL
-python run_all.py --mode full --results results_final.csv
-
-# Quick test — 5 seeds per bot to verify everything works
-python run_all.py --mode test --results results_test.csv
+python heuristic_bots.py --bot flush --results results_final.csv
+python heuristic_bots.py --bot meta  --results results_final.csv
 ```
 
-### Run individual agents
+### LLM agents
 
 ```bash
-# Heuristic bots
+# Zero-shot
+python llm_bot.py --seeds SEED001 ... SEED050 --results results_final.csv
+
+# RAG (rules only)
+python rag_pipeline.py --seeds SEED001 ... SEED050 --results results_final.csv
+
+# RAG (strategy)
+python rag_meta_pipeline.py --seeds SEED001 ... SEED050 --results results_final.csv
+```
+
+PowerShell seed expansion:
+
+```powershell
+$seeds = 1..50 | ForEach-Object { "SEED{0:D3}" -f $_ }
+python llm_bot.py --seeds $seeds --results results_final.csv
+```
+
+---
+
+## Reproducing Paper Results
+
+```bash
+# 1. Run all agents (assumes Balatro is running with balatrobot mod)
 python heuristic_bots.py --bot flush --results results_final.csv
 python heuristic_bots.py --bot meta  --results results_final.csv
 
-# LLM / RAG
-python llm_bot.py      --seeds SEED001 SEED002 ... SEED050 --results results_final.csv
-python rag_pipeline.py --seeds SEED001 SEED002 ... SEED050 --results results_final.csv
+$seeds = 1..50 | ForEach-Object { "SEED{0:D3}" -f $_ }
+python llm_bot.py            --seeds $seeds --results results_final.csv
+python rag_pipeline.py       --seeds $seeds --results results_final.csv
+python rag_meta_pipeline.py  --seeds $seeds --results results_final.csv
 
-# RL bot (requires trained model)
-python rl_bot.py --run --results results_final.csv
-```
-
-### Train the RL agent from scratch
-
-```bash
-# Mock environment training — ~18 hours on GPU, 120M steps, 16 parallel envs
-python rl_bot.py --train --mock --timesteps 120000000
-
-# Quick smoke test (500k steps)
-python rl_bot.py --train --mock --timesteps 500000
-```
-
-### Build the RAG index (one-time setup)
-
-```bash
-python rag_pipeline.py --build-index
-```
-
-### Analyze results
-
-```bash
+# 2. Analyse results
 python analyze_results.py --results results_final.csv --output figures/
+
+# 3. Generate publication figures
+python plot_figure.py --results results_final.csv --output figures/
 ```
 
-Produces:
-- `figures/summary_table.csv` — mean ± std per agent for all metrics
-- `figures/ante_progression.png` — boxplot of final ante by agent
-- `figures/economy_comparison.png` — jokers bought, blinds skipped, discards used
-- `figures/hand_type_distribution.png` — hand type breakdown per agent
-- `figures/llm_cost_summary.csv` — token and cost breakdown for LLM agents
-- `figures/qualitative_summary.csv` — LLM reasoning patterns from decision logs
+All agents use **Red Deck, White Stake, seeds SEED001–SEED100** (heuristic) or **SEED001–SEED050** (LLM/RAG).
 
 ---
 
@@ -170,73 +176,55 @@ Produces:
 
 | Parameter | Value |
 |---|---|
-| Seeds | `SEED001`–`SEED100` (heuristic), `SEED001`–`SEED050` (LLM/RL) |
+| Seeds (heuristic) | SEED001–SEED100 |
+| Seeds (LLM/RAG) | SEED001–SEED050 |
 | Deck | Red Deck (+1 discard per round) |
 | Stake | White (baseline difficulty) |
 | Runs per seed | 1 |
 | LLM model | `claude-sonnet-4-6` |
-| RL algorithm | MaskablePPO, net_arch=[256,256,128] |
-| RL training steps | 120,000,000 |
-| RL parallel envs | 16 |
-| Obs dimension | 148 |
-| Curriculum | Ante 1→2→3→4→5→6 unlocked at 0/40M/60M/80M/100M/120M steps |
+| Embedding model | `all-MiniLM-L6-v2` |
+| RAG top-k | 5 |
+| Rules index vectors | 27 |
+| Strategy index vectors | 13 |
 
 ---
 
-## Design Decisions
+## Design Notes
 
-### Why a mock environment for RL?
+### Why Balatro?
 
-The live Balatrobot API runs at ~1 it/s over HTTP. Training 120M steps on the real environment would take ~33 days. The mock environment (`balatro_mock_env.py`) approximates core mechanics — hand scoring, joker effects, interest system, boss blind debuffs, curriculum learning — enabling GPU-accelerated training at ~1,900 it/s.
-
-The sim-to-real transfer gap is itself a key research finding: the agent learned to hoard cash for interest income in the mock env, a behavior that transfers poorly to the real game where early joker purchases compound multiplicatively.
+Balatro requires multi-step planning across 3 blinds per ante, economy management across shops, and adaptation to random boss blind effects. It has sparse rewards (win/lose per blind), stochastic card draws, and a large action space — making it a challenging and realistic testbed for agent comparison.
 
 ### Why zero-shot (no few-shot examples)?
 
-The research question is whether LLMs can reason about novel game mechanics from scratch. Few-shot examples would constitute implicit strategy transfer. The LLMBot prompt contains only mechanical game state — current hand, chips needed, joker descriptions, available actions — with no strategy hints or example decisions.
+The research question is whether LLMs can reason about novel game mechanics from scratch. Adding few-shot examples would constitute implicit strategy transfer and confound the comparison with MetaBot.
 
-### Why Pinecone over a local vector store?
+### RAGBot (rules) negative result
 
-Practical demonstration of production RAG infrastructure. ChromaDB would work equally well technically.
+Rules-only retrieval underperforms zero-shot LLM because Claude's pretraining data includes Balatro wikis, Reddit posts, and strategy guides — the rules corpus adds redundant context that interferes with the model's own reasoning rather than supplying new information. This is evidenced by significantly higher self-correction rates (0.95 vs 0.44 per hand) and 78 ante-1 blind skips vs 0 for RAGBot (strategy).
 
-### RLBot shop policy
+### Strategy corpus design
 
-After 120M training steps the RL agent's shop policy failed to converge — it learned to hoard cash for interest income rather than buy jokers, a reward signal failure in the mock environment. The final RLBot uses MetaBot's rule-based shop policy to isolate the RL contribution to hand selection and blind decisions only. This creates a clean ablation: MetaBot (rule-based everything) vs RLBot (learned hand selection, rule-based shop).
-
----
-
-## Qualitative LLM Analysis
-
-Every LLM and RAG decision is logged to `llm_decisions.jsonl` and `rag_decisions.jsonl` with:
-
-- Full prompt and raw response
-- Parsed action and reasoning text
-- Parse success/failure and retry flag
-- Input/output token counts
-- Available hands vs hands chosen (hand recognition accuracy)
-- Self-correction count (how often Claude said "wait" or "actually" mid-reasoning)
-- Boss blind adaptation flag
-- Blind skip tracking (ante 1 skips specifically)
-
-Filter to clean runs: `timestamp >= "2026-06-29"`.
+`data/strategy.json` encodes exactly the decision logic implemented in MetaBot's code — joker tier priorities, interest floor thresholds, dominant hand tracking, blind skip rules, and boss blind adaptations — as 13 retrievable text chunks. Nothing in the corpus exceeds what MetaBot's code executes, ensuring a fair knowledge-matched comparison.
 
 ---
 
 ## Citation
 
 ```bibtex
-@inproceedings{maharaj2027balatro,
-  title     = {Can an LLM Play Balatro Without Ever Practicing?},
-  author    = {Maharaj, Vinayak},
-  booktitle = {Proceedings of the IEEE Conference on Games},
-  year      = {2027}
+@inproceedings{maharaj2026balatro,
+  title     = {Can an {LLM} Play {Balatro} Without Ever Practicing?},
+  author    = {Maharaj, Vinayak and Hosein, Patrick},
+  booktitle = {Proceedings of the 8th IEEE International Conference on
+               Technology Management, Operations and Decisions (ICTMOD)},
+  year      = {2026},
+  address   = {Paris, France},
 }
 ```
 
 ---
 
-## Author
+## Contact
 
-**Vinayak Maharaj** · [vinayakmaharaj.dev](https://vinayakmaharaj.dev) · University of Toronto (BSc CS + Statistics, 2025)
-
-Research at TTLab under Prof. Patrick Hosein · Target: IEEE CoG 2027, AAAI 2027
+**Vinayak Maharaj** · University of Toronto (BSc CS + Statistics)  
+**Prof. Patrick Hosein** · TTLab, University of the West Indies
