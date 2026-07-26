@@ -162,23 +162,43 @@ def print_summary_table(summary: pd.DataFrame):
 
 
 def significance_tests(df: pd.DataFrame, metric: str = "final_ante"):
+    """
+    Runs pairwise Mann-Whitney U tests twice:
+      1. Primary agents only (MetaBot, LLMBot, RAGBot strategy) — 3 comparisons.
+      2. All five agents including ablations (FlushBot, RAGBot rules) — 10 comparisons.
+    The second block is what lets Results/Discussion state whether RAGBot (rules)
+    or FlushBot differ significantly from the primary agents, rather than relying
+    on a bare descriptive mean comparison.
+
+    Both blocks report the standard alpha=0.05 significance flag AND a
+    Bonferroni-corrected flag, since running 10 pairwise tests at alpha=0.05
+    inflates the family-wise false-positive rate. The Bonferroni-corrected
+    alpha is 0.05 / n_comparisons for each block.
+    """
     primary  = [b for b in PRIMARY_BOTS if b in df["bot_type"].unique()]
     all_bots = [b for b in BOT_ORDER if b in df["bot_type"].unique()]
-    print(f"Pairwise Mann-Whitney U tests (primary agents): {metric}")
-    print("-" * 50)
-    bots = primary
-    for i, b1 in enumerate(bots):
-        for b2 in bots[i+1:]:
-            g1 = df[df["bot_type"] == b1][metric].dropna()
-            g2 = df[df["bot_type"] == b2][metric].dropna()
-            if len(g1) < 3 or len(g2) < 3:
-                print(f"  {BOT_LABELS.get(b1,b1)} vs {BOT_LABELS.get(b2,b2)}: insufficient data")
-                continue
-            u, p = stats.mannwhitneyu(g1, g2, alternative="two-sided")
-            sig = "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else "ns"
-            print(f"  {BOT_LABELS.get(b1,b1):20} vs {BOT_LABELS.get(b2,b2):20}: "
-                  f"U={u:.0f}, p={p:.4f} {sig}")
-    print()
+
+    def _run_pairs(bots, label, n_comparisons):
+        print(f"Pairwise Mann-Whitney U tests ({label}): {metric}")
+        print("-" * 60)
+        bonf_alpha = 0.05 / n_comparisons
+        for i, b1 in enumerate(bots):
+            for b2 in bots[i+1:]:
+                g1 = df[df["bot_type"] == b1][metric].dropna()
+                g2 = df[df["bot_type"] == b2][metric].dropna()
+                if len(g1) < 3 or len(g2) < 3:
+                    print(f"  {BOT_LABELS.get(b1,b1)} vs {BOT_LABELS.get(b2,b2)}: insufficient data")
+                    continue
+                u, p = stats.mannwhitneyu(g1, g2, alternative="two-sided")
+                sig = "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else "ns"
+                bonf_sig = "*(bonf)" if p < bonf_alpha else ""
+                print(f"  {BOT_LABELS.get(b1,b1):20} vs {BOT_LABELS.get(b2,b2):20}: "
+                      f"U={u:.0f}, p={p:.4f} {sig} {bonf_sig}")
+        print(f"  [Bonferroni-corrected alpha for {n_comparisons} comparisons: {bonf_alpha:.4f}]")
+        print()
+
+    _run_pairs(primary, "primary agents", n_comparisons=3)
+    _run_pairs(all_bots, "ALL agents incl. ablations", n_comparisons=10)
 
 
 # ---------------------------------------------------------------------------
