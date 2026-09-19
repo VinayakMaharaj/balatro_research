@@ -1,36 +1,40 @@
-# Can an LLM Play Balatro Without Ever Practicing?
+# Can Generative AI be used to win at Balatro?
 
 **Comparing retrieval-augmented and zero-shot LLM agents against a hand-coded heuristic on a long-horizon sequential decision problem**
 
 > Vinayak Maharaj, University of Toronto  
 > Prof. Patrick Hosein, TTLab, University of the West Indies  
-> Published at IEEE ICTMOD 2026
+> Accepted at IEEE ICTMOD 2026
 
 ---
 
 ## Overview
 
-This repository contains the full experimental code for the paper *"Can an LLM Play Balatro Without Ever Practicing?"*, which uses **Balatro** — a poker-based roguelike card game — as a testbed for evaluating how different AI approaches handle long-horizon decision-making under uncertainty and sparse rewards.
+This repository contains the full experimental code for the paper *"Can Generative AI be used to win at Balatro?"*, which uses **Balatro** — a poker-based roguelike card game — as a testbed for evaluating how different AI approaches handle long-horizon decision-making under uncertainty and sparse rewards.
 
-The central research question: can a zero-shot large language model, with no prior training on the task, match or exceed a carefully hand-coded heuristic agent? And does retrieval-augmented generation (RAG) with expert strategy knowledge close the gap further?
+The central research question: given identical domain knowledge, does an LLM augmented with retrieval outperform the same LLM operating zero-shot, and does either outperform a deterministic system built from that same knowledge?
 
 ---
 
 ## Key Results
 
-| Agent | Avg Final Ante | n | Description |
-|---|---|---|---|
-| **RAGBot (strategy)** | **2.24** | 48 | LLM + expert strategy via RAG |
-| **LLMBot** | **2.08** | 50 | Zero-shot Claude Sonnet 4.6 |
-| **MetaBot** | **2.06** | 99 | Hand-coded heuristic baseline |
-| RAGBot (rules) | 1.88 | 50 | LLM + rules-only RAG (ablation) |
-| FlushBot | 1.14 | 100 | Rule-based floor baseline |
+347 valid games across five agents.
 
-**Finding 1:** RAGBot (strategy) outperforms MetaBot (2.24 vs 2.06), demonstrating that LLM reasoning over expert strategy knowledge can exceed deterministic execution of the same knowledge.
+| Agent | n | Avg Final Ante | SD | Avg Final Round | SD | Win Rate |
+|---|---|---|---|---|---|---|
+| **RAGBot (strategy)** | 48 | **2.31** | 0.97 | **5.94** | 2.39 | 0% |
+| LLMBot | 50 | 2.08 | 0.94 | 4.94 | 2.59 | 0% |
+| MetaBot | 99 | 2.06 | 0.78 | 5.02 | 1.90 | 0% |
+| RAGBot (rules) | 50 | 1.88 | 0.92 | 3.16 | 1.75 | 0% |
+| FlushBot | 100 | 1.14 | 0.35 | 2.35 | 0.96 | 0% |
 
-**Finding 2:** Zero-shot LLMBot matches MetaBot (2.08 vs 2.06, p=ns), showing that Claude Sonnet's pretraining encodes sufficient game knowledge to compete with a hand-coded heuristic.
+**Finding 1:** RAGBot (strategy) achieves the highest average final Ante of any agent (2.31) and significantly outperforms MetaBot on final Round (p=0.041, uncorrected), though the Ante-level advantage does not reach significance at this sample size (p=0.148). This is evidence that LLM reasoning over expert strategy knowledge can outperform deterministic execution of the same knowledge, strongest on the finer-grained Round metric.
 
-**Finding 3 (negative result):** Rules-only RAG underperforms zero-shot LLM (1.88 vs 2.08). Retrieved rules add noise rather than signal because Claude already encodes Balatro's mechanics from pretraining data. This is supported qualitatively — RAGBot (rules) produced 0.95 self-corrections per hand decision vs 0.44 for RAGBot (strategy).
+**Finding 2:** Zero-shot LLMBot matches MetaBot on both metrics, with no significant difference on Ante (p=0.861) or Round (p=0.456) — a clean null result showing Claude Sonnet 4.6's pretraining already encodes sufficient Balatro domain knowledge to compete with a hand-coded heuristic built from the same sources.
+
+**Finding 3 (negative result):** Rules-only RAG measurably underperforms zero-shot LLM on final Round (p=0.0002, survives Bonferroni correction), though the Ante-level difference is not significant (p=0.231). Retrieved mechanics add noise rather than signal, since Claude already encodes Balatro's rules from pretraining. This is supported qualitatively: RAGBot (rules) self-corrects 0.95 times per hand-selection decision (vs 0.44 for RAGBot strategy, 0.52 for LLMBot) and skips the Ante-1 Small/Big Blind 78 times (vs 28 for LLMBot and 0 for RAGBot strategy) — a policy neither MetaBot nor RAGBot (strategy) permits at all.
+
+**Overall:** none of the five agents came close to winning (0% win rate across all 347 games). The differences reported above are differences in how far each agent gets, not in whether the run succeeds.
 
 ---
 
@@ -42,7 +46,7 @@ The central research question: can a zero-shot large language model, with no pri
 | MetaBot | `heuristic_bots.py` | Hand-coded heuristic with tiered joker priority, dominant hand tracking, economy rules |
 | LLMBot | `llm_bot.py` | Zero-shot Claude Sonnet 4.6, mechanical game state prompt only |
 | RAGBot (rules) | `rag_pipeline.py` | LLM + Pinecone rules corpus (27 vectors, official game mechanics) |
-| RAGBot (strategy) | `rag_meta_pipeline.py` | LLM + Pinecone strategy corpus (13 chunks mirroring MetaBot's decision logic) |
+| RAGBot (strategy) | `rag_meta_pipeline.py` | LLM + Pinecone strategy corpus mirroring MetaBot's decision logic |
 
 ---
 
@@ -58,29 +62,27 @@ The central research question: can a zero-shot large language model, with no pri
 ---
 
 ## Repository Structure
-
-```
 balatro_research/
-├── base_bot.py              # Base class: game loop, CSV logging, W&B tracking
-├── balatro_client.py        # HTTP JSON-RPC client for balatrobot API
-├── heuristic_bots.py        # FlushBot and MetaBot
-├── llm_bot.py               # LLMBot — zero-shot Claude Sonnet 4.6
-├── rag_pipeline.py          # RAGBot (rules) — LLM + rules-only Pinecone index
-├── rag_meta_pipeline.py     # RAGBot (strategy) — LLM + strategy Pinecone index
-├── analyze_results.py       # Statistical analysis and figure generation
-├── plot_figure.py           # IEEE-formatted publication figures (PDF + SVG)
+├── base_bot.py # Base class: game loop, CSV logging, W&B tracking
+├── balatro_client.py # HTTP JSON-RPC client for balatrobot API
+├── heuristic_bots.py # FlushBot and MetaBot
+├── llm_bot.py # LLMBot — zero-shot Claude Sonnet 4.6
+├── rag_pipeline.py # RAGBot (rules) — LLM + rules-only Pinecone index
+├── rag_meta_pipeline.py # RAGBot (strategy) — LLM + strategy Pinecone index
+├── analyze_results.py # Statistical analysis and figure generation
+├── plot_figure.py # IEEE-formatted publication figures (PDF + SVG)
 ├── data/
-│   ├── rules.json           # 27 official game rules (RAG corpus)
-│   └── strategy.json        # 13 strategy chunks mirroring MetaBot's logic
-├── results_final.csv        # Full experimental results (347 valid games)
-├── llm_decisions.jsonl      # Per-decision LLM reasoning log
-├── rag_decisions.jsonl      # Per-decision RAGBot (rules) reasoning log
+│ ├── rules.json # Official game rules (RAG corpus)
+│ └── strategy.json # Strategy chunks mirroring MetaBot's logic
+├── results_final.csv # Full experimental results (347 valid games)
+├── llm_decisions.jsonl # Per-decision LLM reasoning log
+├── rag_decisions.jsonl # Per-decision RAGBot (rules) reasoning log
 ├── rag_meta_decisions.jsonl # Per-decision RAGBot (strategy) reasoning log
 └── figures/
-    ├── figure1_performance.pdf   # Box-and-whisker: final ante by agent
-    ├── figure2_qualitative.pdf   # Decision quality metrics: LLM agents
-    └── summary_table.csv         # Mean ± std per agent for all metrics
-```
+├── figure1_performance.pdf # Box-and-whisker: final ante by agent
+├── figure2_qualitative.pdf # Decision quality metrics: LLM agents
+└── summary_table.csv # Mean ± std per agent for all metrics
+
 
 ---
 
@@ -168,7 +170,7 @@ python analyze_results.py --results results_final.csv --output figures/
 python plot_figure.py --results results_final.csv --output figures/
 ```
 
-All agents use **Red Deck, White Stake, seeds SEED001–SEED100** (heuristic) or **SEED001–SEED050** (LLM/RAG).
+All agents use **Red Deck, White Stake**. Heuristic agents ran on 100 seeds (99 valid for MetaBot); LLM-driven agents ran on 50 seeds each (48 valid for RAGBot strategy), reflecting the higher per-game API cost of LLM inference relative to deterministic code execution.
 
 ---
 
@@ -185,7 +187,6 @@ All agents use **Red Deck, White Stake, seeds SEED001–SEED100** (heuristic) or
 | Embedding model | `all-MiniLM-L6-v2` |
 | RAG top-k | 5 |
 | Rules index vectors | 27 |
-| Strategy index vectors | 13 |
 
 ---
 
@@ -193,7 +194,7 @@ All agents use **Red Deck, White Stake, seeds SEED001–SEED100** (heuristic) or
 
 ### Why Balatro?
 
-Balatro requires multi-step planning across 3 blinds per ante, economy management across shops, and adaptation to random boss blind effects. It has sparse rewards (win/lose per blind), stochastic card draws, and a large action space — making it a challenging and realistic testbed for agent comparison.
+Balatro requires multi-step planning across 3 blinds per ante, economy management across shops, and adaptation to 23 distinct Boss Blind effects. It is stochastic (no fixed sequence of moves to memorize), has sparse terminal rewards, and forces long-horizon tradeoffs — a Joker bought at Ante 1 can determine whether Ante 6 is survivable.
 
 ### Why zero-shot (no few-shot examples)?
 
@@ -201,11 +202,15 @@ The research question is whether LLMs can reason about novel game mechanics from
 
 ### RAGBot (rules) negative result
 
-Rules-only retrieval underperforms zero-shot LLM because Claude's pretraining data includes Balatro wikis, Reddit posts, and strategy guides — the rules corpus adds redundant context that interferes with the model's own reasoning rather than supplying new information. This is evidenced by significantly higher self-correction rates (0.95 vs 0.44 per hand) and 78 ante-1 blind skips vs 0 for RAGBot (strategy).
+Rules-only retrieval underperforms zero-shot LLM on final Round because Claude's pretraining data includes Balatro wikis, Reddit posts, and strategy guides — the rules corpus adds redundant context that interferes with the model's own reasoning rather than supplying new information. This is evidenced by significantly higher self-correction rates (0.95 vs 0.44 per hand) and 78 Ante-1 blind skips vs 0 for RAGBot (strategy). Self-corrections concentrate in hand-composition arithmetic (the model losing count of its own hand mid-reasoning) rather than genuine rule misapplication.
 
 ### Strategy corpus design
 
-`data/strategy.json` encodes exactly the decision logic implemented in MetaBot's code — joker tier priorities, interest floor thresholds, dominant hand tracking, blind skip rules, and boss blind adaptations — as 13 retrievable text chunks. Nothing in the corpus exceeds what MetaBot's code executes, ensuring a fair knowledge-matched comparison.
+`data/strategy.json` encodes exactly the decision logic implemented in MetaBot's code — joker tier priorities, interest floor thresholds, dominant hand tracking, blind skip rules, and boss blind adaptations — as retrievable text chunks. Nothing in the corpus exceeds what MetaBot's code executes, ensuring a fair knowledge-matched comparison.
+
+### Why not reinforcement learning
+
+A MaskablePPO agent was trained alongside the five reported agents (310M timesteps, curriculum learning against a mock environment), but its shop policy converged on hoarding cash rather than buying Jokers — a reward-misspecification failure only visible once training had converged. A hybrid version using MetaBot's shop heuristic performed only marginally above FlushBot. The mock environment's fidelity around shop economy, not the RL algorithm, was the limiting factor; this direction was not pursued further for the paper.
 
 ---
 
@@ -213,12 +218,11 @@ Rules-only retrieval underperforms zero-shot LLM because Claude's pretraining da
 
 ```bibtex
 @inproceedings{maharaj2026balatro,
-  title     = {Can an {LLM} Play {Balatro} Without Ever Practicing?},
+  title     = {Can Generative {AI} be used to win at {Balatro}?},
   author    = {Maharaj, Vinayak and Hosein, Patrick},
   booktitle = {Proceedings of the 8th IEEE International Conference on
                Technology Management, Operations and Decisions (ICTMOD)},
   year      = {2026},
-  address   = {Paris, France},
 }
 ```
 
